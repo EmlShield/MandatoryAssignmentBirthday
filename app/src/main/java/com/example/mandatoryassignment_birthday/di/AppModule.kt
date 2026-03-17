@@ -5,6 +5,7 @@ import com.example.mandatoryassignment_birthday.data.model.repository.AuthReposi
 import com.example.mandatoryassignment_birthday.data.model.repository.BirthdayRepository
 import com.example.mandatoryassignment_birthday.viewmodel.AuthViewModel
 import com.example.mandatoryassignment_birthday.viewmodel.BirthdayViewModel
+import com.example.mandatoryassignment_birthday.BuildConfig
 import com.google.firebase.auth.FirebaseAuth
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
@@ -15,7 +16,7 @@ val appModule = module {
     // Provide Retrofit
     single {
         Retrofit.Builder()
-            .baseUrl("https://birthdaysrest.azurewebsites.net/api/")
+            .baseUrl(BuildConfig.BASE_URL)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
     }
