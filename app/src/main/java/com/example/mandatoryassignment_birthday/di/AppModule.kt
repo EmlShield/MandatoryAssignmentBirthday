@@ -1,28 +1,40 @@
 package com.example.mandatoryassignment_birthday.di
 
 import com.example.mandatoryassignment_birthday.data.model.network.BirthdayApiService
+import com.example.mandatoryassignment_birthday.data.model.repository.AuthRepository
 import com.example.mandatoryassignment_birthday.data.model.repository.BirthdayRepository
+import com.example.mandatoryassignment_birthday.viewmodel.AuthViewModel
 import com.example.mandatoryassignment_birthday.viewmodel.BirthdayViewModel
-import org.koin.androidx.viewmodel.dsl.viewModel
+import com.google.firebase.auth.FirebaseAuth
+import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 val appModule = module {
-    // 1. Provide Retrofit
+    // Provide Retrofit
     single {
         Retrofit.Builder()
-            .baseUrl("https://birthdaysrest.azurewebsites.net/api/persons")
+            .baseUrl("https://birthdaysrest.azurewebsites.net/api/")
             .addConverterFactory(GsonConverterFactory.create())
             .build()
     }
 
-    // 2. Provide API Service
+    // Provide API Service
     single { get<Retrofit>().create(BirthdayApiService::class.java) }
 
-    // 3. Provide the Repository
+    // Provide the Repository
     single { BirthdayRepository(get()) }
 
-    // 4. Provide the ViewModel
+    // Provide the ViewModel
     viewModel { BirthdayViewModel(get()) }
+
+    // Provide FirebaseAuth instance
+    single { FirebaseAuth.getInstance() }
+
+    // Provide AuthRepository
+    single { AuthRepository(get()) }
+
+    // Provide AuthViewModel
+    viewModel { AuthViewModel(get()) }
 }

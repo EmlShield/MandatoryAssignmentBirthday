@@ -6,9 +6,12 @@ import com.example.mandatoryassignment_birthday.data.model.network.BirthdayApiSe
 class BirthdayRepository(private val apiService: BirthdayApiService) {
     suspend fun getBirthdays(): List<Birthday> {
         return try {
-            apiService.getBirthdays()
+            val response = apiService.getBirthdays()
+            println("API_DEBUG: Data received: ${response.size} items")
+            response
         } catch (e: Exception) {
-            // TODO: Handle errors
+            println("API_DEBUG: Error fetching data: ${e.message}")
+            e.printStackTrace()
             emptyList()
         }
     }

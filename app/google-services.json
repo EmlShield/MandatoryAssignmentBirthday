@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1042208289902",
+    "project_id": "authenticator-ec36d",
+    "storage_bucket": "authenticator-ec36d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1042208289902:android:f7a961ab3d042dc467627f",
+        "android_client_info": {
+          "package_name": "com.example.mandatoryassignment_birthday"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyASWYg9K6dHawMyyvhqC7qAwdn4n-wd3wY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

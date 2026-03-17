@@ -16,20 +16,30 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.mandatoryassignment_birthday.data.model.Birthday
 import com.example.mandatoryassignment_birthday.viewmodel.BirthdayViewModel
 import org.koin.androidx.compose.koinViewModel
 
 
 @Composable
 fun BirthdayListScreen(
+    // Ask Koin to provide the ViewModel
     viewModel: BirthdayViewModel = koinViewModel()
 ) {
+    // Collect the list of birthdays from the ViewModel as state
     val birthdayList by viewModel.birthdays.collectAsState()
 
+    // Fetch the birthdays when the screen is first displayed
     LaunchedEffect(Unit) {
         viewModel.fetchBirthdays()
     }
 
+    // Display the list of birthdays
+    BirthdayListContent(birthdays = birthdayList)
+}
+
+@Composable
+fun BirthdayListContent(birthdays: List<Birthday>) {
     Scaffold(
         topBar = {
             Text(
@@ -39,8 +49,9 @@ fun BirthdayListScreen(
             )
         }
     ) { padding ->
+        // Display the list of birthdays in a LazyColumn
         LazyColumn(modifier = Modifier.padding(padding)) {
-            items(birthdayList) { birthday ->
+            items(birthdays) { birthday ->
                 // This is a single row in the list
                 Card(
                     modifier = Modifier
@@ -56,7 +67,7 @@ fun BirthdayListScreen(
             }
 
             // Show a message if the list is empty
-            if (birthdayList.isEmpty()) {
+            if (birthdays.isEmpty()) {
                 item {
                     Text(
                         text = "No birthdays found.",
@@ -70,6 +81,11 @@ fun BirthdayListScreen(
 
 @Preview(showBackground = true)
 @Composable
-fun BirthdayListScreenPreview() {
-    BirthdayListScreen()
+fun BirthdayListPreview() {
+    val fakeBirthdays = listOf(
+        Birthday(1, "01", "John Doe", 1950, 5, 5, "Happy Birthday!", "Url", 65),
+        Birthday(1, "02", "Jane Smith", 1960, 6, 15, "Happy Birthday!", "Url", 50)
+    )
+
+    BirthdayListContent(birthdays = fakeBirthdays)
 }
