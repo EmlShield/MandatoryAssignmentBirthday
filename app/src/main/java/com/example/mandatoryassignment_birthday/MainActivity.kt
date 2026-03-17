@@ -23,14 +23,24 @@ class MainActivity : ComponentActivity() {
 fun AppNavigation() {
     val navController = rememberNavController()
 
-    NavHost(navController = navController, startDestination = "birthdayList") {
+    NavHost(navController = navController, startDestination = "login") {
 
-        composable("birthdayList") {
-            BirthdayListScreen()
+        // Destination: Login Screen
+        composable("login") {
+            LoginScreen(
+                onLoginSuccess = {
+                    // Navigate to the birthday list screen on successful login
+                    navController.navigate("birthdayList") {
+                        // Clear the back stack to prevent going back to the login screen
+                        popUpTo("login") { inclusive = true }
+                    }
+                }
+            )
         }
 
-        composable("login") {
-            LoginScreen()
+        // Destination: Birthday List Screen
+        composable("birthdayList") {
+            BirthdayListScreen()
         }
     }
 }
