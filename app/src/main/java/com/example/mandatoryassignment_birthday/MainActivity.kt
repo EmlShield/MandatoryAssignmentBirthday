@@ -40,7 +40,14 @@ fun AppNavigation() {
 
         // Destination: Birthday List Screen
         composable("birthdayList") {
-            BirthdayListScreen()
+            BirthdayListScreen(
+                onLogout = {
+                    navController.navigate("Login") {
+                        // Clear the list screen from history so they can't "Go Back" into the app
+                        popUpTo("birthdayList") { inclusive = true }
+                    }
+                }
+            )
         }
     }
 }
