@@ -15,4 +15,14 @@ class BirthdayRepository(private val apiService: BirthdayApiService) {
             emptyList()
         }
     }
+
+    suspend fun addBirthday(birthday: Birthday): Boolean {
+        return try {
+            apiService.addBirthday(birthday)
+            true // Return true if successful
+        } catch (e: Exception) {
+            println("API_DEBUG: Add failed: ${e.message}")
+            false // Return false if it failed
+        }
+    }
 }

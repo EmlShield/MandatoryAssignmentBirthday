@@ -39,4 +39,31 @@ class BirthdayViewModel(private val repository: BirthdayRepository) : ViewModel(
             }
         }
     }
+
+    fun addBirthday(name: String, year: Int, month: Int, day: Int) {
+        viewModelScope.launch {
+            _isLoading.value = true
+
+            // Create a new Birthday object
+            val newBirthday = Birthday(
+                id = 0,
+                userId = "", // TODO: Get from AuthViewModel later
+                name = name,
+                birthYear = year,
+                birthMonth = month,
+                birthDayOfMonth = day,
+                description = "",
+                pictureUrl = "",
+                age = 0
+            )
+
+            val success = repository.addBirthday(newBirthday)
+            if (success) {
+                fetchBirthdays() // Refresh the list after adding
+            } else {
+                _errorMessage.value = "Could not add birthday"
+            }
+            _isLoading.value = false
+        }
+    }
 }
