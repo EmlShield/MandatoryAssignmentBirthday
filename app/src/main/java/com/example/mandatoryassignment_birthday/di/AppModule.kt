@@ -1,8 +1,8 @@
 package com.example.mandatoryassignment_birthday.di
 
-import com.example.mandatoryassignment_birthday.data.model.network.BirthdayApiService
-import com.example.mandatoryassignment_birthday.data.model.repository.AuthRepository
-import com.example.mandatoryassignment_birthday.data.model.repository.BirthdayRepository
+import com.example.mandatoryassignment_birthday.data.network.BirthdayApiService
+import com.example.mandatoryassignment_birthday.data.repository.AuthRepository
+import com.example.mandatoryassignment_birthday.data.repository.BirthdayRepository
 import com.example.mandatoryassignment_birthday.viewmodel.AuthViewModel
 import com.example.mandatoryassignment_birthday.viewmodel.BirthdayViewModel
 import com.example.mandatoryassignment_birthday.BuildConfig

@@ -1,4 +1,4 @@
-package com.example.mandatoryassignment_birthday.data.model.network
+package com.example.mandatoryassignment_birthday.data.network
 
 import com.example.mandatoryassignment_birthday.data.model.Birthday
 import retrofit2.http.GET

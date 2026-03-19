@@ -1,4 +1,4 @@
-package com.example.mandatoryassignment_birthday.data.model.network
+package com.example.mandatoryassignment_birthday.data.network
 
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory

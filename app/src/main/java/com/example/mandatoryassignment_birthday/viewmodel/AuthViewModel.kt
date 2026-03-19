@@ -3,7 +3,7 @@ package com.example.mandatoryassignment_birthday.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mandatoryassignment_birthday.data.model.User
-import com.example.mandatoryassignment_birthday.data.model.repository.AuthRepository
+import com.example.mandatoryassignment_birthday.data.repository.AuthRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,20 +29,43 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
-
-            val user = repository.login(email, pass)
-
-            if (user != null) {
-                _userState.value = user
-            } else {
-                _error.value = "Login Failed. Please check your credentials."
+            try {
+                val user = repository.login(email, pass)
+                if (user != null) {
+                    _userState.value = user
+                } else {
+                    _error.value = "Invalid email or password"
+                }
+            } catch (e: Exception) {
+                _error.value = e.localizedMessage ?: "Login Failed"
+            } finally {
+                _isLoading.value = false
             }
-            _isLoading.value = false
         }
     }
 
     fun logout() {
         repository.logout()
         _userState.value = null
+    }
+
+    fun signUp(email: String, pass: String) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+            try {
+                val user = repository.signUp(email, pass)
+                if (user != null) {
+                    _userState.value = user
+                } else {
+                    _error.value = "Could not create account."
+                }
+            } catch (e: Exception) {
+                // Shows real errors like "Email already in use"
+                _error.value = e.localizedMessage ?: "Sign Up Failed"
+            } finally {
+                _isLoading.value = false
+            }
+        }
     }
 }

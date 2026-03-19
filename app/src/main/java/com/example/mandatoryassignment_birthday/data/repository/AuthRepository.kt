@@ -1,4 +1,4 @@
-package com.example.mandatoryassignment_birthday.data.model.repository
+package com.example.mandatoryassignment_birthday.data.repository
 
 import com.example.mandatoryassignment_birthday.data.model.User
 import com.google.firebase.auth.FirebaseAuth
@@ -31,5 +31,16 @@ class AuthRepository(private val firebaseAuth: FirebaseAuth) {
         firebaseAuth.signOut()
     }
 
-    // TODO: Add signup method later
+    suspend fun signUp(email: String, pass: String): User? {
+        return try {
+            val result = firebaseAuth.createUserWithEmailAndPassword(email, pass).await()
+            val firebaseUser = result.user
+            firebaseUser?.let {
+                User(userId = it.uid, email = it.email)
+            }
+        } catch (e: Exception) {
+            // TODO: Handle specific registration errors (email already in use)
+            null
+        }
+    }
 }

@@ -3,7 +3,7 @@ package com.example.mandatoryassignment_birthday.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mandatoryassignment_birthday.data.model.Birthday
-import com.example.mandatoryassignment_birthday.data.model.repository.BirthdayRepository
+import com.example.mandatoryassignment_birthday.data.repository.BirthdayRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

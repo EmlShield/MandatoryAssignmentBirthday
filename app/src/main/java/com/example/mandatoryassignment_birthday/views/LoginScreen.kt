@@ -12,6 +12,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -41,6 +42,9 @@ fun LoginScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
+    // New State to toggle between Login and Sign-Up
+    var isLoginMode by remember { mutableStateOf(true) }
+
     // If the user state changes to "not null", trigger the success callback
     LaunchedEffect(user) {
         if (user != null) {
@@ -55,7 +59,17 @@ fun LoginScreen(
         onPasswordChange = { password = it },
         error = error,
         isLoading = isLoading,
-        onLoginClick = { viewModel.login(email, password) }
+        onLoginClick = { viewModel.login(email, password) },
+        isLoginMode = isLoginMode,
+        onModeChange = { isLoginMode = !isLoginMode },
+        onActionClick = {
+            // Decide which ViewModel function to call
+            if (isLoginMode) {
+                viewModel.login(email, password)
+            } else {
+                viewModel.signUp(email, password)
+            }
+        }
     )
 }
 
@@ -67,14 +81,21 @@ fun LoginContent(
     onPasswordChange: (String) -> Unit,
     error: String?,
     isLoading: Boolean,
-    onLoginClick: () -> Unit
+    onLoginClick: () -> Unit,
+    isLoginMode: Boolean,
+    onModeChange: () -> Unit,
+    onActionClick: () -> Unit
 ) {
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text(text = "Birthday App Login", style = MaterialTheme.typography.headlineLarge)
+        // Dynamic Text based on mode
+        Text(
+            text = if (isLoginMode) "Welcome to Birthday App" else "Create Account",
+            style = MaterialTheme.typography.headlineLarge
+        )
 
         Spacer(modifier = Modifier.height(32.dp))
 
@@ -106,19 +127,25 @@ fun LoginContent(
             CircularProgressIndicator()
         } else {
             Button(
-                onClick = onLoginClick,
+                onClick = onActionClick,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Login")
+                Text(if (isLoginMode) "Login" else "Sign Up")
             }
         }
 
-        // TODO: Add a "Register" button
+        // Button to switch modes
+        TextButton(onClick = onModeChange) {
+            Text(
+                if (isLoginMode) "Don't have an account? Sign Up"
+                else "Already have an account? Login"
+            )
+        }
     }
 }
 
 @Preview(showBackground = true)
 @Composable
 fun LoginScreenPreview() {
-    LoginContent("test@test.com", {}, "1234", {}, null, false, {})
+    LoginContent("test@test.com", {}, "1234", {}, null, false, {}, true, {}, {})
 }
