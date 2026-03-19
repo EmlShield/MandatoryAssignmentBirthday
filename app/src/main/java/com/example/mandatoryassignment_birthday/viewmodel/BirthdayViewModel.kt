@@ -18,6 +18,14 @@ class BirthdayViewModel(private val repository: BirthdayRepository) : ViewModel(
     // This is the public "stream" that the UI reads from
     val birthdays: StateFlow<List<Birthday>> = _birthdays.asStateFlow()
 
+    // Loading state
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    // Error state
+    private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
+
     // This function triggers the API call
     fun fetchBirthdays() {
         viewModelScope.launch {
@@ -25,7 +33,9 @@ class BirthdayViewModel(private val repository: BirthdayRepository) : ViewModel(
                 val result = repository.getBirthdays()
                 _birthdays.value = result // Update the StateFlow with the new data
             } catch (e: Exception) {
-                // TODO: Handle errors for the UI
+                _errorMessage.value = "Failed to load birthdays: ${e.localizedMessage}"
+            } finally {
+                _isLoading.value = false
             }
         }
     }

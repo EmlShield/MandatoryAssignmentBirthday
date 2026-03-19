@@ -9,7 +9,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -21,6 +23,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -41,11 +44,13 @@ fun BirthdayListScreen(
     val birthdayList by birthdayViewModel.birthdays.collectAsState()
     val user by authViewModel.userState.collectAsState()
 
+    // Observe loading & error state
+    val isLoading by birthdayViewModel.isLoading.collectAsState()
+    val errorMessage by birthdayViewModel.errorMessage.collectAsState()
+
     // Fetch the birthdays when the screen is first displayed
     LaunchedEffect(user) {
-        if (user == null) {
-            onLogout()
-        }
+        if (user == null) { onLogout() }
     }
 
     LaunchedEffect(Unit) {
@@ -68,9 +73,25 @@ fun BirthdayListScreen(
             )
         }
     ) { innerPadding ->
-        BirthdayListContent(
-            birthdays = birthdayList,
-            modifier = Modifier.padding(innerPadding))
+        // Handle the different UI states
+        Box(
+            modifier = Modifier.fillMaxSize().padding(innerPadding),
+            contentAlignment = Alignment.Center
+        ) {
+            if (isLoading) {
+                CircularProgressIndicator()
+            } else if (errorMessage != null) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(text = errorMessage!!, color = MaterialTheme.colorScheme.error)
+                    Button(onClick = { birthdayViewModel.fetchBirthdays() }) {
+                        Text("Retry")
+                    }
+                }
+            } else {
+                // Only show the content if not loading and no error
+                BirthdayListContent(birthdays = birthdayList)
+            }
+        }
     }
 }
 
@@ -78,39 +99,29 @@ fun BirthdayListScreen(
 fun BirthdayListContent(
     birthdays: List<Birthday>,
     modifier: Modifier = Modifier) {
-    Scaffold(
-        topBar = {
-            Text(
-                text = "Upcoming Birthdays",
-                style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.padding(16.dp)
-            )
-        }
-    ) { padding ->
-        Box(modifier = modifier) {
-            // Display the list of birthdays in a LazyColumn
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(birthdays) { birthday ->
-                    // This is a single row in the list
-                    Card(
-                        modifier = Modifier.fillMaxWidth().padding(8.dp)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(text = birthday.name, style = MaterialTheme.typography.titleLarge)
-                            Text(text = "Date: ${birthday.birthDayOfMonth}/${birthday.birthMonth} - ${birthday.birthYear}", style = MaterialTheme.typography.bodyMedium)
-                            // TODO: Add more UI elements like icons or delete buttons
-                        }
+    Box(modifier = modifier) {
+        // Display the list of birthdays in a LazyColumn
+        LazyColumn(modifier = Modifier.fillMaxSize()) {
+            items(birthdays) { birthday ->
+                // This is a single row in the list
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(8.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(text = birthday.name, style = MaterialTheme.typography.titleLarge)
+                        Text(text = "Date: ${birthday.birthDayOfMonth}/${birthday.birthMonth} - ${birthday.birthYear}", style = MaterialTheme.typography.bodyMedium)
+                        // TODO: Add more UI elements like icons or delete buttons
                     }
                 }
+            }
 
-                // Show a message if the list is empty
-                if (birthdays.isEmpty()) {
-                    item {
-                        Text(
-                            text = "No birthdays found.",
-                            modifier = Modifier.padding(16.dp)
-                        )
-                    }
+            // Show a message if the list is empty
+            if (birthdays.isEmpty()) {
+                item {
+                    Text(
+                        text = "No birthdays found.",
+                        modifier = Modifier.padding(16.dp)
+                    )
                 }
             }
         }
