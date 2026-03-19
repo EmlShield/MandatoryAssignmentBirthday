@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.mandatoryassignment_birthday.views.AddBirthdayScreen
 import com.example.mandatoryassignment_birthday.views.BirthdayListScreen
 import com.example.mandatoryassignment_birthday.views.LoginScreen
 
@@ -46,7 +47,16 @@ fun AppNavigation() {
                         // Clear the list screen from history so they can't "Go Back" into the app
                         popUpTo("birthdayList") { inclusive = true }
                     }
+                },
+                onNavigateToAddBirthday = {
+                    navController.navigate("addBirthday")
                 }
+            )
+        }
+
+        composable("addBirthday") {
+            AddBirthdayScreen(
+                onBack = { navController.popBackStack() }
             )
         }
     }
