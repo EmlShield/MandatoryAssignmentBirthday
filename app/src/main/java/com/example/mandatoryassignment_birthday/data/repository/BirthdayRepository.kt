@@ -35,4 +35,14 @@ class BirthdayRepository(private val apiService: BirthdayApiService) {
             false
         }
     }
+
+    suspend fun updateBirthday(id: Int, birthday: Birthday): Boolean {
+        return try {
+            apiService.updateBirthday(id, birthday)
+            true
+        } catch (e: Exception) {
+            println("API_DEBUG: Update failed: ${e.message}")
+            false
+        }
+    }
 }

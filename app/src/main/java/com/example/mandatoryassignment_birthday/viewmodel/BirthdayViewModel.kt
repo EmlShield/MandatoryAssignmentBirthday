@@ -26,7 +26,7 @@ class BirthdayViewModel(private val repository: BirthdayRepository) : ViewModel(
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
-    // This function triggers the API call
+    // Fetch the birthdays from the repository
     fun fetchBirthdays() {
         viewModelScope.launch {
             try {
@@ -40,6 +40,7 @@ class BirthdayViewModel(private val repository: BirthdayRepository) : ViewModel(
         }
     }
 
+    // Add a new birthday
     fun addBirthday(name: String, year: Int, month: Int, day: Int) {
         viewModelScope.launch {
             _isLoading.value = true
@@ -67,6 +68,7 @@ class BirthdayViewModel(private val repository: BirthdayRepository) : ViewModel(
         }
     }
 
+    // Delete a birthday
     fun deleteBirthday(id: Int) {
         viewModelScope.launch {
             _isLoading.value = true
@@ -77,6 +79,35 @@ class BirthdayViewModel(private val repository: BirthdayRepository) : ViewModel(
                 fetchBirthdays() // Refresh the list to show the deleted item is gone
             } else {
                 _errorMessage.value = "Could not delete birthday"
+            }
+            _isLoading.value = false
+        }
+    }
+
+    //
+    fun getBirthdaysById(id: Int): Birthday? {
+        return birthdays.value.find { it.id == id }
+    }
+
+    fun updateBirthday(id: Int, name: String, year: Int, month: Int, day: Int) {
+        viewModelScope.launch {
+            _isLoading.value = true
+
+            val existing = getBirthdaysById(id)
+            if (existing != null) {
+                val updatedBirthday = existing.copy(
+                    name = name,
+                    birthYear = year,
+                    birthMonth = month,
+                    birthDayOfMonth = day
+                )
+
+                val success = repository.updateBirthday(id, updatedBirthday)
+                if (success) {
+                    fetchBirthdays() // Refresh the list to show the updated item
+                } else {
+                    _errorMessage.value = "Could not update birthday"
+                }
             }
             _isLoading.value = false
         }

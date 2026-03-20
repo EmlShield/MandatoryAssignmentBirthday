@@ -5,6 +5,7 @@ import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.PUT
 import retrofit2.http.Path
 
 interface BirthdayApiService {
@@ -18,5 +19,6 @@ interface BirthdayApiService {
     @DELETE("persons/{id}")
     suspend fun deleteBirthday(@Path("id") id: Int): Birthday
 
-    // TODO: Add PUT methods later
+    @PUT("persons/{id}")
+    suspend fun updateBirthday(@Path("id") id: Int, @Body birthday: Birthday): Birthday
 }
