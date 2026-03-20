@@ -25,4 +25,14 @@ class BirthdayRepository(private val apiService: BirthdayApiService) {
             false // Return false if it failed
         }
     }
+
+    suspend fun deleteBirthday(id: Int): Boolean {
+        return try {
+            apiService.deleteBirthday(id)
+            true
+        } catch (e: Exception) {
+            println("API_DEBUG: Delete failed: ${e.message}")
+            false
+        }
+    }
 }

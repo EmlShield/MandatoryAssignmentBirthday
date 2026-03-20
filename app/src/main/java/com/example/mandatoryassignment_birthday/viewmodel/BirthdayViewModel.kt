@@ -66,4 +66,19 @@ class BirthdayViewModel(private val repository: BirthdayRepository) : ViewModel(
             _isLoading.value = false
         }
     }
+
+    fun deleteBirthday(id: Int) {
+        viewModelScope.launch {
+            _isLoading.value = true
+
+            // Delete the birthday
+            val success = repository.deleteBirthday(id)
+            if (success) {
+                fetchBirthdays() // Refresh the list to show the deleted item is gone
+            } else {
+                _errorMessage.value = "Could not delete birthday"
+            }
+            _isLoading.value = false
+        }
+    }
 }

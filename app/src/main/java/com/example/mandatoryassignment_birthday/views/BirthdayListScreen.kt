@@ -2,6 +2,7 @@ package com.example.mandatoryassignment_birthday.views
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -10,6 +11,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -99,7 +101,10 @@ fun BirthdayListScreen(
                 }
             } else {
                 // Only show the content if not loading and no error
-                BirthdayListContent(birthdays = birthdayList)
+                BirthdayListContent(
+                    birthdays = birthdayList,
+                    onDeleteClick = { id -> birthdayViewModel.deleteBirthday(id) }
+                )
             }
         }
     }
@@ -108,6 +113,7 @@ fun BirthdayListScreen(
 @Composable
 fun BirthdayListContent(
     birthdays: List<Birthday>,
+    onDeleteClick: (Int) -> Unit,
     modifier: Modifier = Modifier) {
     Box(modifier = modifier) {
         // Display the list of birthdays in a LazyColumn
@@ -117,10 +123,22 @@ fun BirthdayListContent(
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(8.dp)
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(text = birthday.name, style = MaterialTheme.typography.titleLarge)
-                        Text(text = "Date: ${birthday.birthDayOfMonth}/${birthday.birthMonth} - ${birthday.birthYear}", style = MaterialTheme.typography.bodyMedium)
-                        // TODO: Add more UI elements like icons or delete buttons
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(text = birthday.name, style = MaterialTheme.typography.titleLarge)
+                            Text(text = "Date: ${birthday.birthDayOfMonth}/${birthday.birthMonth} - ${birthday.birthYear}", style = MaterialTheme.typography.bodyMedium)
+                        }
+
+                        IconButton(onClick = { onDeleteClick(birthday.id) }) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Delete",
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
                     }
                 }
             }
@@ -146,5 +164,8 @@ fun BirthdayListPreview() {
         Birthday(1, "02", "Jane Smith", 1960, 6, 15, "Happy Birthday!", "Url", 50)
     )
 
-    BirthdayListContent(birthdays = fakeBirthdays)
+    BirthdayListContent(
+        birthdays = fakeBirthdays,
+        onDeleteClick = { id -> println("Delete clicked for $id") }
+    )
 }
