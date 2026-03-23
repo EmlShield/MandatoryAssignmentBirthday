@@ -7,10 +7,11 @@ import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface BirthdayApiService {
     @GET("persons")
-    suspend fun getBirthdays(): List<Birthday>
+    suspend fun getBirthdays(@Query("userId") userId: String): List<Birthday>
 
     // @Body tells Retrofit to convert the birthday object to JSON
     @POST("persons")

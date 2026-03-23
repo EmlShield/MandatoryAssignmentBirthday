@@ -3,10 +3,13 @@ package com.example.mandatoryassignment_birthday
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.mandatoryassignment_birthday.views.AddBirthdayScreen
 import com.example.mandatoryassignment_birthday.views.BirthdayListScreen
 import com.example.mandatoryassignment_birthday.views.LoginScreen
@@ -48,16 +51,39 @@ fun AppNavigation() {
                         popUpTo("birthdayList") { inclusive = true }
                     }
                 },
-                onNavigateToAddBirthday = {
-                    navController.navigate("addBirthday")
+                onEditBirthday = { id ->
+                    if (id == -1) {
+                        navController.navigate("birthdayForm") // Add Mode
+                    } else {
+                        navController.navigate("birthdayForm?birthdayId=$id") // Edit Mode
+                    }
+                },
+                // Handle Details Navigation
+                onSeeDetails = { id ->
+                    navController.navigate("birthdayDetails/$id")
                 }
             )
         }
 
-        composable("addBirthday") {
+        composable(
+            route = "birthdayForm?birthdayId={birthdayId}",
+            arguments = listOf(navArgument("birthdayId") {
+                type = NavType.IntType
+                defaultValue = -1
+            })
+        ) { backStackEntry ->
+            val id = backStackEntry.arguments?.getInt("birthdayId")
+
             AddBirthdayScreen(
+                birthdayId = if (id == -1) null else id,
                 onBack = { navController.popBackStack() }
             )
+        }
+
+        composable("birthdayDetails/{birthdayId}") { backStackEntry ->
+            val id = backStackEntry.arguments?.getString("birthdayId")?.toIntOrNull()
+            // TODO: Create and call BirthdayDetailsScreen with the extracted ID
+            Text("Details for Birthday ID: $id") // Placeholder
         }
     }
 }

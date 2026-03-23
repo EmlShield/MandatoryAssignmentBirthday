@@ -25,12 +25,15 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.mandatoryassignment_birthday.viewmodel.AuthViewModel
 import com.example.mandatoryassignment_birthday.viewmodel.BirthdayViewModel
 import org.koin.androidx.compose.koinViewModel
 import java.util.Calendar
@@ -39,10 +42,13 @@ import java.util.Date
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddBirthdayScreen(
+    birthdayId: Int? = null,
     onBack: () -> Unit,
-    viewModel: BirthdayViewModel = koinViewModel()
+    viewModel: BirthdayViewModel = koinViewModel(),
+    authViewModel: AuthViewModel = koinViewModel()
 ) {
     var name by remember { mutableStateOf("") }
+    val user by authViewModel.userState.collectAsState()
 
     // DatePicker state
     val datePickerState = rememberDatePickerState()
@@ -57,10 +63,37 @@ fun AddBirthdayScreen(
         "${calendar.get(Calendar.DAY_OF_MONTH)}/${calendar.get(Calendar.MONTH) + 1}/${calendar.get(Calendar.YEAR)}"
     } ?: "Select Date"
 
+    LaunchedEffect(birthdayId) {
+        if (birthdayId != null && birthdayId != -1) {
+            val existing = viewModel.getBirthdayById(birthdayId)
+            if (existing != null) {
+                name = existing.name
+
+                // Set the DatePicker to the existing date
+                val calendar = Calendar.getInstance()
+                calendar.set(existing.birthYear, existing.birthMonth - 1, existing.birthDayOfMonth)
+
+                // Update the DatePicker state
+                datePickerState.selectedDateMillis = calendar.timeInMillis
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        // Clear the error when the screen is displayed
+        viewModel.clearError()
+
+        viewModel.navigationEvent.collect { isDone ->
+            if (isDone) {
+                onBack()
+            }
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Add Birthday") },
+                title = { Text(if (birthdayId == null || birthdayId == -1) "Add Birthday" else "Edit Birthday") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -112,22 +145,41 @@ fun AddBirthdayScreen(
             Button(
                 onClick = {
                     // Extract the date from the picker
-                    datePickerState.selectedDateMillis?.let { millis ->
+                    val millis = datePickerState.selectedDateMillis
+                    val currentUserEmail = user?.email
+
+                    if (millis != null && currentUserEmail != null) {
                         val calendar = Calendar.getInstance().apply { timeInMillis = millis }
-                        viewModel.addBirthday(
-                            name = name,
-                            day = calendar.get(Calendar.DAY_OF_MONTH),
-                            month = calendar.get(Calendar.MONTH) + 1, // Months are 0-based
-                            year = calendar.get(Calendar.YEAR)
-                        )
-                        onBack() // Navigate back after adding
+                        val year = calendar.get(Calendar.YEAR)
+                        val month = calendar.get(Calendar.MONTH) + 1
+                        val day = calendar.get(Calendar.DAY_OF_MONTH)
+
+                        if (birthdayId == null || birthdayId == -1) {
+                            // Add Mode
+                            viewModel.addBirthday(
+                                currentUserEmail,
+                                name,
+                                year,
+                                month,
+                                day
+                            )
+                        } else {
+                            // Edit Mode
+                            viewModel.updateBirthday(
+                                birthdayId,
+                                name,
+                                year,
+                                month,
+                                day
+                            )
+                        }
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
                 // Only enable the button if both fields are filled
-                enabled = name.isNotBlank() && datePickerState.selectedDateMillis != null
+                enabled = name.isNotBlank() && datePickerState.selectedDateMillis != null && user != null
             ) {
-                Text("Save Birthday")
+                Text(if (birthdayId == null || birthdayId == -1) "Save Birthday" else "Update Birthday")
             }
         }
 

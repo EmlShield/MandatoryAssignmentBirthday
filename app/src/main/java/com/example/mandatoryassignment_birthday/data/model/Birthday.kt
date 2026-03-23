@@ -16,9 +16,9 @@ data class Birthday (
     @SerializedName("birthDayOfMonth")
     val birthDayOfMonth: Int,
     @SerializedName("remarks")
-    val description: String,
+    val description: String?,
     @SerializedName("pictureUrl")
-    val pictureUrl: String,
+    val pictureUrl: String?,
     @SerializedName("age")
-    val age: Int
+    val age: Int? = null
 )

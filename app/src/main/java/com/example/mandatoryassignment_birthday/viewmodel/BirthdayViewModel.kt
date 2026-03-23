@@ -4,13 +4,19 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mandatoryassignment_birthday.data.model.Birthday
 import com.example.mandatoryassignment_birthday.data.repository.BirthdayRepository
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlin.collections.emptyList
 
 class BirthdayViewModel(private val repository: BirthdayRepository) : ViewModel() {
+
+    // Holds the current user's ID
+    private var currentUserId: String? = null
 
     // This is the private "stream" where we update the date
     private val _birthdays = MutableStateFlow<List<Birthday>>(emptyList())
@@ -26,14 +32,37 @@ class BirthdayViewModel(private val repository: BirthdayRepository) : ViewModel(
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
+    // "One-time" event stream for navigation
+    private val _navigationEvent = MutableSharedFlow<Boolean>()
+    val navigationEvent: SharedFlow<Boolean> = _navigationEvent.asSharedFlow()
+
+    fun clearError() {
+        _errorMessage.value = null
+    }
+
+    // Refresh the list of birthdays
+    private suspend fun performFetch(userId: String) {
+        try {
+            val result = repository.getBirthdays(userId)
+            _birthdays.value = result
+            println("DEBUG: Successfully fetched ${result.size} birthdays for $userId")
+        } catch (e: Exception) {
+            _errorMessage.value = "Failed to load birthdays: ${e.localizedMessage}"
+            println("DEBUG: Error fetching birthdays: ${e.localizedMessage}")
+        }
+    }
+
     // Fetch the birthdays from the repository
-    fun fetchBirthdays() {
+    fun fetchBirthdays(userId: String) {
+        // Save the user ID for later use
+        currentUserId = userId
+
         viewModelScope.launch {
             try {
-                val result = repository.getBirthdays()
-                _birthdays.value = result // Update the StateFlow with the new data
+                _isLoading.value = true
+                performFetch(userId)
             } catch (e: Exception) {
-                _errorMessage.value = "Failed to load birthdays: ${e.localizedMessage}"
+                _errorMessage.value = "Network error: ${e.message}"
             } finally {
                 _isLoading.value = false
             }
@@ -41,75 +70,91 @@ class BirthdayViewModel(private val repository: BirthdayRepository) : ViewModel(
     }
 
     // Add a new birthday
-    fun addBirthday(name: String, year: Int, month: Int, day: Int) {
+    fun addBirthday(userId: String, name: String, year: Int, month: Int, day: Int) {
         viewModelScope.launch {
-            _isLoading.value = true
+            try {
+                _isLoading.value = true
 
-            // Create a new Birthday object
-            val newBirthday = Birthday(
-                id = 0,
-                userId = "", // TODO: Get from AuthViewModel later
-                name = name,
-                birthYear = year,
-                birthMonth = month,
-                birthDayOfMonth = day,
-                description = "",
-                pictureUrl = "",
-                age = 0
-            )
+                // Create a new Birthday object
+                val newBirthday = Birthday(
+                    id = 0,
+                    userId = userId,
+                    name = name,
+                    birthYear = year,
+                    birthMonth = month,
+                    birthDayOfMonth = day,
+                    description = null,
+                    pictureUrl = null,
+                    age = null
+                )
 
-            val success = repository.addBirthday(newBirthday)
-            if (success) {
-                fetchBirthdays() // Refresh the list after adding
-            } else {
-                _errorMessage.value = "Could not add birthday"
+                if (repository.addBirthday(newBirthday)) {
+                    performFetch(userId) // Refresh the list to show the new item
+                    _navigationEvent.emit(true)
+                } else {
+                    _errorMessage.value = "Could not add birthday"
+                }
+            } catch (e: Exception) {
+                _errorMessage.value = "Network error: ${e.message}"
+            } finally {
+                _isLoading.value = false
             }
-            _isLoading.value = false
         }
     }
 
     // Delete a birthday
     fun deleteBirthday(id: Int) {
         viewModelScope.launch {
-            _isLoading.value = true
+            try {
+                _isLoading.value = true
 
-            // Delete the birthday
-            val success = repository.deleteBirthday(id)
-            if (success) {
-                fetchBirthdays() // Refresh the list to show the deleted item is gone
-            } else {
-                _errorMessage.value = "Could not delete birthday"
+                // Delete the birthday
+                val success = repository.deleteBirthday(id)
+                if (success) {
+                    performFetch(currentUserId ?: "") // Refresh the list
+                } else {
+                    _errorMessage.value = "Could not delete birthday"
+                }
+            } catch (e: Exception) {
+                _errorMessage.value = "Network error: ${e.message}"
+            } finally {
+                _isLoading.value = false
             }
-            _isLoading.value = false
         }
     }
 
     //
-    fun getBirthdaysById(id: Int): Birthday? {
-        return birthdays.value.find { it.id == id }
+    fun getBirthdayById(id: Int): Birthday? {
+        val found = _birthdays.value.find { it.id == id }
+        if (found == null) {
+            println("DEBUG: Birthday with ID $id not found in list. List size: ${_birthdays.value.size}")
+        }
+        return found
     }
 
     fun updateBirthday(id: Int, name: String, year: Int, month: Int, day: Int) {
         viewModelScope.launch {
-            _isLoading.value = true
+            try {
+                _isLoading.value = true
 
-            val existing = getBirthdaysById(id)
-            if (existing != null) {
-                val updatedBirthday = existing.copy(
-                    name = name,
-                    birthYear = year,
-                    birthMonth = month,
-                    birthDayOfMonth = day
-                )
-
-                val success = repository.updateBirthday(id, updatedBirthday)
-                if (success) {
-                    fetchBirthdays() // Refresh the list to show the updated item
-                } else {
-                    _errorMessage.value = "Could not update birthday"
+                val existing = getBirthdayById(id)
+                if (existing != null) {
+                    val updatedBirthday = existing.copy(
+                        name = name,
+                        birthYear = year,
+                        birthMonth = month,
+                        birthDayOfMonth = day
+                    )
+                    if (repository.updateBirthday(id, updatedBirthday)) {
+                        currentUserId?.let { performFetch(it) }
+                        _navigationEvent.emit(true)
+                    }
                 }
+            } catch (e: Exception) {
+                _errorMessage.value = "Network error: ${e.message}"
+            } finally {
+                _isLoading.value = false
             }
-            _isLoading.value = false
         }
     }
 }

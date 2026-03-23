@@ -1,5 +1,6 @@
 package com.example.mandatoryassignment_birthday.views
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -43,7 +45,8 @@ fun BirthdayListScreen(
     birthdayViewModel: BirthdayViewModel = koinViewModel(),
     authViewModel: AuthViewModel = koinViewModel(),
     onLogout: () -> Unit, // Callback for navigation
-    onNavigateToAddBirthday: () -> Unit // Callback for navigation
+    onEditBirthday: (Int) -> Unit,
+    onSeeDetails: (Int) -> Unit
 ) {
     // Collect the list of birthdays from the ViewModel as state
     val birthdayList by birthdayViewModel.birthdays.collectAsState()
@@ -58,8 +61,10 @@ fun BirthdayListScreen(
         if (user == null) { onLogout() }
     }
 
-    LaunchedEffect(Unit) {
-        birthdayViewModel.fetchBirthdays()
+    LaunchedEffect(user) {
+        user?.email?.let { email ->
+            birthdayViewModel.fetchBirthdays(email)
+        }
     }
 
     Scaffold(
@@ -78,9 +83,9 @@ fun BirthdayListScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { onNavigateToAddBirthday() }
-            ) {
+            FloatingActionButton(onClick = {
+                onEditBirthday(-1) // -1 indicates a new birthday
+            }) {
                 Icon(Icons.Default.Add, contentDescription = "Add")
             }
         }
@@ -95,7 +100,7 @@ fun BirthdayListScreen(
             } else if (errorMessage != null) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(text = errorMessage!!, color = MaterialTheme.colorScheme.error)
-                    Button(onClick = { birthdayViewModel.fetchBirthdays() }) {
+                    Button(onClick = { birthdayViewModel.fetchBirthdays(userId = user?.email ?: "") }) {
                         Text("Retry")
                     }
                 }
@@ -103,7 +108,10 @@ fun BirthdayListScreen(
                 // Only show the content if not loading and no error
                 BirthdayListContent(
                     birthdays = birthdayList,
-                    onDeleteClick = { id -> birthdayViewModel.deleteBirthday(id) }
+                    modifier = Modifier.padding(innerPadding),
+                    onDeleteClick = { id -> birthdayViewModel.deleteBirthday(id) },
+                    onEditClick = { id -> onEditBirthday(id) },
+                    onCardClick = { id -> onSeeDetails(id) }
                 )
             }
         }
@@ -114,6 +122,8 @@ fun BirthdayListScreen(
 fun BirthdayListContent(
     birthdays: List<Birthday>,
     onDeleteClick: (Int) -> Unit,
+    onEditClick: (Int) -> Unit,
+    onCardClick: (Int) -> Unit,
     modifier: Modifier = Modifier) {
     Box(modifier = modifier) {
         // Display the list of birthdays in a LazyColumn
@@ -121,7 +131,10 @@ fun BirthdayListContent(
             items(birthdays) { birthday ->
                 // This is a single row in the list
                 Card(
-                    modifier = Modifier.fillMaxWidth().padding(8.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp)
+                        .clickable { onCardClick(birthday.id) } // Clicking the card = Detail screen
                 ) {
                     Row(
                         modifier = Modifier.padding(16.dp),
@@ -132,6 +145,15 @@ fun BirthdayListContent(
                             Text(text = "Date: ${birthday.birthDayOfMonth}/${birthday.birthMonth} - ${birthday.birthYear}", style = MaterialTheme.typography.bodyMedium)
                         }
 
+                        // Edit button
+                        IconButton(onClick = { onEditClick(birthday.id) }) {
+                            Icon(
+                                Icons.Default.Edit,
+                                contentDescription = "Edit"
+                            )
+                        }
+
+                        // Delete button
                         IconButton(onClick = { onDeleteClick(birthday.id) }) {
                             Icon(
                                 imageVector = Icons.Default.Delete,
@@ -166,6 +188,8 @@ fun BirthdayListPreview() {
 
     BirthdayListContent(
         birthdays = fakeBirthdays,
-        onDeleteClick = { id -> println("Delete clicked for $id") }
+        onDeleteClick = { id -> println("Delete clicked for $id") },
+        onEditClick = { id -> println("Edit clicked for $id") },
+        onCardClick = { id -> println("Card clicked for $id") }
     )
 }

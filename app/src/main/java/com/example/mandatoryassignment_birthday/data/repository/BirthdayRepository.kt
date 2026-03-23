@@ -4,9 +4,9 @@ import com.example.mandatoryassignment_birthday.data.model.Birthday
 import com.example.mandatoryassignment_birthday.data.network.BirthdayApiService
 
 class BirthdayRepository(private val apiService: BirthdayApiService) {
-    suspend fun getBirthdays(): List<Birthday> {
+    suspend fun getBirthdays(userId: String): List<Birthday> {
         return try {
-            val response = apiService.getBirthdays()
+            val response = apiService.getBirthdays(userId)
             println("API_DEBUG: Data received: ${response.size} items")
             response
         } catch (e: Exception) {
