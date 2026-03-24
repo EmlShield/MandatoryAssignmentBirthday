@@ -2,47 +2,49 @@ package com.example.mandatoryassignment_birthday.data.repository
 
 import com.example.mandatoryassignment_birthday.data.model.Birthday
 import com.example.mandatoryassignment_birthday.data.network.BirthdayApiService
+import com.example.mandatoryassignment_birthday.data.network.NetworkResult
+import retrofit2.HttpException
+import java.io.IOException
 
 class BirthdayRepository(private val apiService: BirthdayApiService) {
-    suspend fun getBirthdays(userId: String): List<Birthday> {
+
+    suspend fun getBirthdays(userId: String): NetworkResult<List<Birthday>> {
         return try {
             val response = apiService.getBirthdays(userId)
-            println("API_DEBUG: Data received: ${response.size} items")
-            response
+            NetworkResult.Success(response)
+        } catch (e: IOException) {
+            NetworkResult.Error("No internet connection. Please check your network settings.", e)
+        } catch (e: HttpException) {
+            NetworkResult.Error("Server error (${e.code()}). Please try again later.", e)
         } catch (e: Exception) {
-            println("API_DEBUG: Error fetching data: ${e.message}")
-            e.printStackTrace()
-            emptyList()
+            NetworkResult.Error("An unexpected error occurred: ${e.localizedMessage}", e)
         }
     }
 
-    suspend fun addBirthday(birthday: Birthday): Boolean {
+    suspend fun addBirthday(birthday: Birthday): NetworkResult<Birthday> {
         return try {
-            apiService.addBirthday(birthday)
-            true // Return true if successful
+            val result = apiService.addBirthday(birthday)
+            NetworkResult.Success(result)
         } catch (e: Exception) {
-            println("API_DEBUG: Add failed: ${e.message}")
-            false // Return false if it failed
+            NetworkResult.Error("Failed to add birthday. ${e.localizedMessage}", e)
         }
     }
 
-    suspend fun deleteBirthday(id: Int): Boolean {
+    suspend fun deleteBirthday(id: Int): NetworkResult<Birthday> {
         return try {
-            apiService.deleteBirthday(id)
-            true
+            val result = apiService.deleteBirthday(id)
+            NetworkResult.Success(result)
         } catch (e: Exception) {
-            println("API_DEBUG: Delete failed: ${e.message}")
-            false
+            NetworkResult.Error("Failed to delete. ${e.localizedMessage}", e)
         }
     }
 
-    suspend fun updateBirthday(id: Int, birthday: Birthday): Boolean {
+    suspend fun updateBirthday(id: Int, birthday: Birthday): NetworkResult<Birthday> {
         return try {
-            apiService.updateBirthday(id, birthday)
-            true
+            val result = apiService.updateBirthday(id, birthday)
+            NetworkResult.Success(result)
         } catch (e: Exception) {
-            println("API_DEBUG: Update failed: ${e.message}")
-            false
+            NetworkResult.Error("Update failed. ${e.localizedMessage}", e)
         }
     }
 }
