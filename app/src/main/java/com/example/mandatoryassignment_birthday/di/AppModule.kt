@@ -38,7 +38,7 @@ val appModule = module {
     single { BirthdayRepository(get()) }
 
     // Provide the ViewModel
-    single { BirthdayViewModel(get()) }
+    viewModel { BirthdayViewModel(get()) }
 
     // Provide FirebaseAuth instance
     single { FirebaseAuth.getInstance() }

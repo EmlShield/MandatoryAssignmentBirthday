@@ -2,15 +2,18 @@ package com.example.mandatoryassignment_birthday.views
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -31,6 +34,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.mandatoryassignment_birthday.viewmodel.AuthViewModel
@@ -49,6 +53,10 @@ fun AddBirthdayScreen(
 ) {
     var name by remember { mutableStateOf("") }
     val user by authViewModel.userState.collectAsState()
+    
+    val isLoading by viewModel.isLoading.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
+    val birthdays by viewModel.birthdays.collectAsState()
 
     // DatePicker state
     val datePickerState = rememberDatePickerState()
@@ -59,30 +67,31 @@ fun AddBirthdayScreen(
         val date = Date(it)
         val calendar = Calendar.getInstance()
         calendar.time = date
-        // Months in Calendar are 0-based, so we add 1
         "${calendar.get(Calendar.DAY_OF_MONTH)}/${calendar.get(Calendar.MONTH) + 1}/${calendar.get(Calendar.YEAR)}"
     } ?: "Select Date"
 
-    LaunchedEffect(birthdayId) {
+    // Fetch data if we are editing and the list is empty
+    LaunchedEffect(user, birthdays) {
+        val email = user?.email
+        if (email != null && birthdays.isEmpty()) {
+            viewModel.fetchBirthdays(email)
+        }
+    }
+
+    LaunchedEffect(birthdays, birthdayId) {
         if (birthdayId != null && birthdayId != -1) {
             val existing = viewModel.getBirthdayById(birthdayId)
             if (existing != null) {
                 name = existing.name
-
-                // Set the DatePicker to the existing date
                 val calendar = Calendar.getInstance()
                 calendar.set(existing.birthYear, existing.birthMonth - 1, existing.birthDayOfMonth)
-
-                // Update the DatePicker state
                 datePickerState.selectedDateMillis = calendar.timeInMillis
             }
         }
     }
 
     LaunchedEffect(Unit) {
-        // Clear the error when the screen is displayed
         viewModel.clearError()
-
         viewModel.navigationEvent.collect { isDone ->
             if (isDone) {
                 onBack()
@@ -109,14 +118,23 @@ fun AddBirthdayScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            if (errorMessage != null) {
+                Text(
+                    text = errorMessage!!,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
+
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
                 label = { Text("Name") },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isLoading
             )
 
-            // Read-only field that opens the DatePicker
             OutlinedTextField(
                 value = selectedDateText,
                 onValueChange = { },
@@ -124,13 +142,12 @@ fun AddBirthdayScreen(
                 readOnly = true,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { showDatePicker = true }, // Open the DatePicker when clicked
+                    .clickable(enabled = !isLoading) { showDatePicker = true },
                 trailingIcon = {
-                    IconButton(onClick = { showDatePicker = true }) {
+                    IconButton(onClick = { showDatePicker = true }, enabled = !isLoading) {
                         Icon(Icons.Default.DateRange, contentDescription = "Select Date")
                     }
                 },
-                // Ensures the field looks clickable
                 enabled = false,
                 colors = OutlinedTextFieldDefaults.colors(
                     disabledTextColor = MaterialTheme.colorScheme.onSurface,
@@ -144,7 +161,6 @@ fun AddBirthdayScreen(
 
             Button(
                 onClick = {
-                    // Extract the date from the picker
                     val millis = datePickerState.selectedDateMillis
                     val currentUserEmail = user?.email
 
@@ -155,35 +171,27 @@ fun AddBirthdayScreen(
                         val day = calendar.get(Calendar.DAY_OF_MONTH)
 
                         if (birthdayId == null || birthdayId == -1) {
-                            // Add Mode
-                            viewModel.addBirthday(
-                                currentUserEmail,
-                                name,
-                                year,
-                                month,
-                                day
-                            )
+                            viewModel.addBirthday(currentUserEmail, name, year, month, day)
                         } else {
-                            // Edit Mode
-                            viewModel.updateBirthday(
-                                birthdayId,
-                                name,
-                                year,
-                                month,
-                                day
-                            )
+                            viewModel.updateBirthday(birthdayId, name, year, month, day)
                         }
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
-                // Only enable the button if both fields are filled
-                enabled = name.isNotBlank() && datePickerState.selectedDateMillis != null && user != null
+                enabled = name.isNotBlank() && datePickerState.selectedDateMillis != null && user != null && !isLoading
             ) {
-                Text(if (birthdayId == null || birthdayId == -1) "Save Birthday" else "Update Birthday")
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text(if (birthdayId == null || birthdayId == -1) "Save Birthday" else "Update Birthday")
+                }
             }
         }
 
-        // Show the DatePicker dialog when requested
         if (showDatePicker) {
             DatePickerDialog(
                 onDismissRequest = { showDatePicker = false },
