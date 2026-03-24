@@ -3,7 +3,6 @@ package com.example.mandatoryassignment_birthday
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -11,6 +10,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.mandatoryassignment_birthday.views.AddBirthdayScreen
+import com.example.mandatoryassignment_birthday.views.BirthdayDetailsScreen
 import com.example.mandatoryassignment_birthday.views.BirthdayListScreen
 import com.example.mandatoryassignment_birthday.views.LoginScreen
 
@@ -46,7 +46,7 @@ fun AppNavigation() {
         composable("birthdayList") {
             BirthdayListScreen(
                 onLogout = {
-                    navController.navigate("Login") {
+                    navController.navigate("login") {
                         // Clear the list screen from history so they can't "Go Back" into the app
                         popUpTo("birthdayList") { inclusive = true }
                     }
@@ -80,10 +80,17 @@ fun AppNavigation() {
             )
         }
 
-        composable("birthdayDetails/{birthdayId}") { backStackEntry ->
-            val id = backStackEntry.arguments?.getString("birthdayId")?.toIntOrNull()
-            // TODO: Create and call BirthdayDetailsScreen with the extracted ID
-            Text("Details for Birthday ID: $id") // Placeholder
+        composable(
+            "birthdayDetails/{birthdayId}",
+            arguments = listOf(navArgument("birthdayId") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val id = backStackEntry.arguments?.getInt("birthdayId") ?: -1
+
+            // Call screen
+            BirthdayDetailsScreen(
+                birthdayId = id,
+                onBack = { navController.popBackStack() }
+            )
         }
     }
 }

@@ -47,8 +47,8 @@ class BirthdayViewModel(private val repository: BirthdayRepository) : ViewModel(
             _birthdays.value = result
             println("DEBUG: Successfully fetched ${result.size} birthdays for $userId")
         } catch (e: Exception) {
-            _errorMessage.value = "Failed to load birthdays: ${e.localizedMessage}"
-            println("DEBUG: Error fetching birthdays: ${e.localizedMessage}")
+            _errorMessage.value = "Failed to load birthdays: ${e.message}"
+            println("DEBUG: Error fetching birthdays: ${e.message}")
         }
     }
 
@@ -58,11 +58,12 @@ class BirthdayViewModel(private val repository: BirthdayRepository) : ViewModel(
         currentUserId = userId
 
         viewModelScope.launch {
+            _isLoading.value = true
+            _errorMessage.value = null
             try {
-                _isLoading.value = true
                 performFetch(userId)
             } catch (e: Exception) {
-                _errorMessage.value = "Network error: ${e.message}"
+                _errorMessage.value = "Failed to load birthdays: ${e.message}"
             } finally {
                 _isLoading.value = false
             }

@@ -58,12 +58,11 @@ fun BirthdayListScreen(
 
     // Fetch the birthdays when the screen is first displayed
     LaunchedEffect(user) {
-        if (user == null) { onLogout() }
-    }
-
-    LaunchedEffect(user) {
-        user?.email?.let { email ->
+        val email = user?.email
+        if (email != null) {
             birthdayViewModel.fetchBirthdays(email)
+        } else if (user == null) {
+            onLogout()
         }
     }
 
