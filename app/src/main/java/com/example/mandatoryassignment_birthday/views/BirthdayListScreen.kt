@@ -83,11 +83,20 @@ fun BirthdayListScreen(
             TopAppBar(
                 title = { Text("Upcoming Birthdays") },
                 actions = {
-                    // Add the Logout Icon Button
-                    IconButton(onClick = { authViewModel.logout() }) {
+                    // Logout button with Icon and Text
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier
+                            .clickable { authViewModel.logout() }
+                            .padding(end = 16.dp)
+                    ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ExitToApp,
                             contentDescription = "Logout"
+                        )
+                        Text(
+                            text = "Log out",
+                            style = MaterialTheme.typography.labelSmall
                         )
                     }
                 }
@@ -246,21 +255,5 @@ fun SortChip(label: String, isSelected: Boolean, onClick: () -> Unit) {
         leadingIcon = if (isSelected) {
             { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
         } else null
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun BirthdayListPreview() {
-    val fakeBirthdays = listOf(
-        Birthday(1, "01", "John Doe", 1950, 5, 5, "Happy Birthday!", "Url", 65),
-        Birthday(1, "02", "Jane Smith", 1960, 6, 15, "Happy Birthday!", "Url", 50)
-    )
-
-    BirthdayListContent(
-        birthdays = fakeBirthdays,
-        onDeleteClick = { id -> println("Delete clicked for $id") },
-        onEditClick = { id -> println("Edit clicked for $id") },
-        onCardClick = { id -> println("Card clicked for $id") }
     )
 }
