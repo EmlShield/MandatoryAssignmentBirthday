@@ -11,12 +11,17 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -29,11 +34,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.mandatoryassignment_birthday.data.model.Birthday
+import com.example.mandatoryassignment_birthday.data.model.SortOrder
 import com.example.mandatoryassignment_birthday.viewmodel.AuthViewModel
 import com.example.mandatoryassignment_birthday.viewmodel.BirthdayViewModel
 import org.koin.androidx.compose.koinViewModel
@@ -56,6 +65,9 @@ fun BirthdayListScreen(
     val isLoading by birthdayViewModel.isLoading.collectAsState()
     val errorMessage by birthdayViewModel.errorMessage.collectAsState()
 
+    val currentSortOrder by birthdayViewModel.sortOrder.collectAsState()
+    var showSortMenu by remember { mutableStateOf(false) }
+
     // Fetch the birthdays when the screen is first displayed
     LaunchedEffect(user) {
         val email = user?.email
@@ -71,6 +83,32 @@ fun BirthdayListScreen(
             TopAppBar(
                 title = { Text("Upcoming Birthdays") },
                 actions = {
+                    Box {
+                        IconButton(onClick = { showSortMenu = true }) {
+                            Icon(Icons.Default.List, contentDescription = "Sort")
+                        }
+                        DropdownMenu(
+                            expanded = showSortMenu,
+                            onDismissRequest = { showSortMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Sort by Name") },
+                                onClick = {
+                                    birthdayViewModel.setSortOrder(SortOrder.NAME)
+                                    showSortMenu = false
+                                },
+                                trailingIcon = { if(currentSortOrder == SortOrder.NAME) Icon(Icons.Default.Check, null) }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Sort by Date") },
+                                onClick = {
+                                    birthdayViewModel.setSortOrder(SortOrder.DATE)
+                                    showSortMenu = false
+                                },
+                                trailingIcon = { if(currentSortOrder == SortOrder.DATE) Icon(Icons.Default.Check, null) }
+                            )
+                        }
+                    }
                     // Add the Logout Icon Button
                     IconButton(onClick = { authViewModel.logout() }) {
                         Icon(
