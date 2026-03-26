@@ -9,11 +9,3 @@ data class User (
     // TODO: Add display name or profile picture URL if needed later
 
 )
-
-/*
-fun calculateAge(year: Int, month: Int, day: Int): Int {
-    val birthDate = LocalDate.of(year, month, day)
-    val today = LocalDate.now()
-    return Period.between(birthDate, today).years
-}
-*/
