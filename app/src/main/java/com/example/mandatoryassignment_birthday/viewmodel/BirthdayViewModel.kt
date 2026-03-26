@@ -3,22 +3,27 @@ package com.example.mandatoryassignment_birthday.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mandatoryassignment_birthday.data.model.Birthday
+import com.example.mandatoryassignment_birthday.data.model.SortOrder
 import com.example.mandatoryassignment_birthday.data.network.NetworkResult
 import com.example.mandatoryassignment_birthday.data.repository.BirthdayRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.WhileSubscribed
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlin.collections.emptyList
 
 class BirthdayViewModel(private val repository: BirthdayRepository) : ViewModel() {
 
     private var currentUserId: String? = null
 
     private val _birthdays = MutableStateFlow<List<Birthday>>(emptyList())
-    val birthdays: StateFlow<List<Birthday>> = _birthdays.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -28,6 +33,22 @@ class BirthdayViewModel(private val repository: BirthdayRepository) : ViewModel(
 
     private val _navigationEvent = MutableSharedFlow<Boolean>()
     val navigationEvent: SharedFlow<Boolean> = _navigationEvent.asSharedFlow()
+
+    private val _sortOrder = MutableStateFlow(SortOrder.NAME)
+    val sortOrder = _sortOrder.asStateFlow()
+
+    val birthdays: StateFlow<List<Birthday>> = combine(_birthdays, _sortOrder) { list, order ->
+        when (order) {
+            SortOrder.NAME -> list.sortedBy { it.name.lowercase() }
+            SortOrder.DATE -> list.sortedWith(
+                compareBy({ it.birthMonth }, { it.birthDayOfMonth }, { it.birthYear })
+            )
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun setSortOrder(order: SortOrder) {
+        _sortOrder.value = order
+    }
 
     fun clearError() {
         _errorMessage.value = null
