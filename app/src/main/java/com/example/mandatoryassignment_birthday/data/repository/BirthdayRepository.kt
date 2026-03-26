@@ -10,8 +10,9 @@ class BirthdayRepository(private val apiService: BirthdayApiService) {
 
     suspend fun getBirthdays(userId: String): NetworkResult<List<Birthday>> {
         return try {
-            val response = apiService.getBirthdays(userId)
-            NetworkResult.Success(response)
+            val response = apiService.getBirthdays()
+            val filteredResponse = response.filter { it.userId == userId }
+            NetworkResult.Success(filteredResponse)
         } catch (e: IOException) {
             NetworkResult.Error("No internet connection. Please check your network settings.", e)
         } catch (e: HttpException) {
