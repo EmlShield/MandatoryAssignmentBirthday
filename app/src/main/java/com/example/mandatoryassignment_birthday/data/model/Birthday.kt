@@ -1,6 +1,8 @@
 package com.example.mandatoryassignment_birthday.data.model
 
 import com.google.gson.annotations.SerializedName
+import java.time.LocalDate
+import java.time.Period
 
 data class Birthday (
     @SerializedName("id")
@@ -22,3 +24,9 @@ data class Birthday (
     @SerializedName("age")
     val age: Int? = null
 )
+
+fun calculateAge(year: Int, month: Int, day: Int): Int {
+    val birthDate = LocalDate.of(year, month, day)
+    val today = LocalDate.now()
+    return Period.between(birthDate, today).years
+}
