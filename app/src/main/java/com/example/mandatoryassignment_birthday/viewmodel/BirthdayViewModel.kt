@@ -11,13 +11,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.WhileSubscribed
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlin.collections.emptyList
 
 class BirthdayViewModel(private val repository: BirthdayRepository) : ViewModel() {
 
@@ -37,18 +35,29 @@ class BirthdayViewModel(private val repository: BirthdayRepository) : ViewModel(
     private val _sortOrder = MutableStateFlow(SortOrder.NAME)
     val sortOrder = _sortOrder.asStateFlow()
 
-    val birthdays: StateFlow<List<Birthday>> = combine(_birthdays, _sortOrder) { list, order ->
+    private val _filterQuery = MutableStateFlow("")
+    val filterQuery = _filterQuery.asStateFlow()
+
+    val birthdays: StateFlow<List<Birthday>> = combine(_birthdays, _sortOrder, _filterQuery) { list, order, query ->
+        val filteredList = if (query.isEmpty()) {
+            list
+        } else {
+            list.filter {
+                it.name.contains(query, ignoreCase = true) ||
+                it.age?.toString()?.contains(query) == true
+            }
+        }
         when (order) {
-            SortOrder.NAME -> list.sortedBy { it.name.lowercase() }
-            SortOrder.DATE -> list.sortedWith(
-                compareBy({ it.birthMonth }, { it.birthDayOfMonth }, { it.birthYear })
-            )
+            SortOrder.NAME -> filteredList.sortedBy { it.name.lowercase() }
+            SortOrder.DATE -> filteredList.sortedWith(compareBy({ it.birthMonth }, { it.birthDayOfMonth }))
+            SortOrder.AGE -> filteredList.sortedByDescending { it.age ?: 0 }
+
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    fun setSortOrder(order: SortOrder) {
-        _sortOrder.value = order
-    }
+    fun setSortOrder(order: SortOrder) { _sortOrder.value = order }
+
+    fun setFilterQuery(query: String) { _filterQuery.value = query }
 
     fun clearError() {
         _errorMessage.value = null

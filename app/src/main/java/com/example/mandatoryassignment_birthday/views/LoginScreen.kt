@@ -59,7 +59,6 @@ fun LoginScreen(
         onPasswordChange = { password = it },
         error = error,
         isLoading = isLoading,
-        onLoginClick = { viewModel.login(email, password) },
         isLoginMode = isLoginMode,
         onModeChange = { isLoginMode = !isLoginMode },
         onActionClick = {
@@ -81,7 +80,6 @@ fun LoginContent(
     onPasswordChange: (String) -> Unit,
     error: String?,
     isLoading: Boolean,
-    onLoginClick: () -> Unit,
     isLoginMode: Boolean,
     onModeChange: () -> Unit,
     onActionClick: () -> Unit
@@ -147,5 +145,5 @@ fun LoginContent(
 @Preview(showBackground = true)
 @Composable
 fun LoginScreenPreview() {
-    LoginContent("test@test.com", {}, "1234", {}, null, false, {}, true, {}, {})
+    LoginContent("test@test.com", {}, "1234", {}, null, false, true, {}, {})
 }
