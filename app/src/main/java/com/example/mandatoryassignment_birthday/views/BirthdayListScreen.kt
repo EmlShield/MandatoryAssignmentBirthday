@@ -170,6 +170,13 @@ fun BirthdayListContent(
                             Text(text = "Date: ${birthday.birthDayOfMonth}/${birthday.birthMonth} - ${birthday.birthYear}", style = MaterialTheme.typography.bodyMedium)
                         }
 
+                        val days = birthday.daysUntilNextBirthday()
+                        Text(
+                            text = if (days == 365L) "TODAY" else "$days days to go",
+                            color = if (days <= 7) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.secondary,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+
                         // Edit button
                         IconButton(onClick = { onEditClick(birthday.id) }) {
                             Icon(
