@@ -1,28 +1,36 @@
 package com.example.mandatoryassignment_birthday.views
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -34,6 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.mandatoryassignment_birthday.data.model.Birthday
+import com.example.mandatoryassignment_birthday.data.model.SortOrder
 import com.example.mandatoryassignment_birthday.viewmodel.AuthViewModel
 import com.example.mandatoryassignment_birthday.viewmodel.BirthdayViewModel
 import org.koin.androidx.compose.koinViewModel
@@ -56,6 +65,9 @@ fun BirthdayListScreen(
     val isLoading by birthdayViewModel.isLoading.collectAsState()
     val errorMessage by birthdayViewModel.errorMessage.collectAsState()
 
+    val sortOrder by birthdayViewModel.sortOrder.collectAsState()
+    val query by birthdayViewModel.filterQuery.collectAsState()
+
     // Fetch the birthdays when the screen is first displayed
     LaunchedEffect(user) {
         val email = user?.email
@@ -71,11 +83,20 @@ fun BirthdayListScreen(
             TopAppBar(
                 title = { Text("Upcoming Birthdays") },
                 actions = {
-                    // Add the Logout Icon Button
-                    IconButton(onClick = { authViewModel.logout() }) {
+                    // Logout button with Icon and Text
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier
+                            .clickable { authViewModel.logout() }
+                            .padding(end = 16.dp)
+                    ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ExitToApp,
                             contentDescription = "Logout"
+                        )
+                        Text(
+                            text = "Log out",
+                            style = MaterialTheme.typography.labelSmall
                         )
                     }
                 }
@@ -89,29 +110,40 @@ fun BirthdayListScreen(
             }
         }
     ) { innerPadding ->
-        // Handle the different UI states
-        Box(
-            modifier = Modifier.fillMaxSize().padding(innerPadding),
-            contentAlignment = Alignment.Center
-        ) {
-            if (isLoading) {
-                CircularProgressIndicator()
-            } else if (errorMessage != null) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(text = errorMessage!!, color = MaterialTheme.colorScheme.error)
-                    Button(onClick = { birthdayViewModel.fetchBirthdays(userId = user?.email ?: "") }) {
-                        Text("Retry")
+        Column(modifier = Modifier.padding(innerPadding)) {
+            FilterSortBar(
+                query = query,
+                onQueryChange = { birthdayViewModel.setFilterQuery(it) },
+                currentSortOrder = sortOrder,
+                onSortChange = { birthdayViewModel.setSortOrder(it) }
+            )
+            // Handle the different UI states
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                if (isLoading) {
+                    CircularProgressIndicator()
+                } else if (errorMessage != null) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(text = errorMessage!!, color = MaterialTheme.colorScheme.error)
+                        Button(onClick = {
+                            birthdayViewModel.fetchBirthdays(
+                                userId = user?.email ?: ""
+                            )
+                        }) {
+                            Text("Retry")
+                        }
                     }
+                } else {
+                    // Only show the content if not loading and no error
+                    BirthdayListContent(
+                        birthdays = birthdayList,
+                        onDeleteClick = { id -> birthdayViewModel.deleteBirthday(id) },
+                        onEditClick = { id -> onEditBirthday(id) },
+                        onCardClick = { id -> onSeeDetails(id) }
+                    )
                 }
-            } else {
-                // Only show the content if not loading and no error
-                BirthdayListContent(
-                    birthdays = birthdayList,
-                    modifier = Modifier.padding(innerPadding),
-                    onDeleteClick = { id -> birthdayViewModel.deleteBirthday(id) },
-                    onEditClick = { id -> onEditBirthday(id) },
-                    onCardClick = { id -> onSeeDetails(id) }
-                )
             }
         }
     }
@@ -126,7 +158,10 @@ fun BirthdayListContent(
     modifier: Modifier = Modifier) {
     Box(modifier = modifier) {
         // Display the list of birthdays in a LazyColumn
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(8.dp)
+        ) {
             items(birthdays) { birthday ->
                 // This is a single row in the list
                 Card(
@@ -143,6 +178,13 @@ fun BirthdayListContent(
                             Text(text = birthday.name, style = MaterialTheme.typography.titleLarge)
                             Text(text = "Date: ${birthday.birthDayOfMonth}/${birthday.birthMonth} - ${birthday.birthYear}", style = MaterialTheme.typography.bodyMedium)
                         }
+
+                        val days = birthday.daysUntilNextBirthday()
+                        Text(
+                            text = if (days == 365L) "TODAY" else "$days days to go",
+                            color = if (days <= 7) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.secondary,
+                            style = MaterialTheme.typography.bodySmall
+                        )
 
                         // Edit button
                         IconButton(onClick = { onEditClick(birthday.id) }) {
@@ -177,18 +219,48 @@ fun BirthdayListContent(
     }
 }
 
-@Preview(showBackground = true)
 @Composable
-fun BirthdayListPreview() {
-    val fakeBirthdays = listOf(
-        Birthday(1, "01", "John Doe", 1950, 5, 5, "Happy Birthday!", "Url", 65),
-        Birthday(1, "02", "Jane Smith", 1960, 6, 15, "Happy Birthday!", "Url", 50)
-    )
+fun FilterSortBar(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    currentSortOrder: SortOrder,
+    onSortChange: (SortOrder) -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shadowElevation = 2.dp, // Makes it look "pinned" over the list
+        color = MaterialTheme.colorScheme.surface
+    ) {
+        Column(modifier = Modifier.padding(8.dp)) {
+            OutlinedTextField(
+                value = query,
+                onValueChange = onQueryChange,
+                label = { Text("Filter by Name or Age") },
+                modifier = Modifier.fillMaxWidth(),
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                singleLine = true
+            )
 
-    BirthdayListContent(
-        birthdays = fakeBirthdays,
-        onDeleteClick = { id -> println("Delete clicked for $id") },
-        onEditClick = { id -> println("Edit clicked for $id") },
-        onCardClick = { id -> println("Card clicked for $id") }
+            Row(
+                modifier = Modifier.padding(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                SortChip("Name", currentSortOrder == SortOrder.NAME) { onSortChange(SortOrder.NAME) }
+                SortChip("Date", currentSortOrder == SortOrder.DATE) { onSortChange(SortOrder.DATE) }
+                SortChip("Age", currentSortOrder == SortOrder.AGE) { onSortChange(SortOrder.AGE) }
+            }
+        }
+    }
+}
+
+@Composable
+fun SortChip(label: String, isSelected: Boolean, onClick: () -> Unit) {
+    FilterChip(
+        selected = isSelected,
+        onClick = onClick,
+        label = { Text(label) },
+        leadingIcon = if (isSelected) {
+            { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
+        } else null
     )
 }
