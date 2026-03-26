@@ -141,9 +141,3 @@ fun LoginContent(
         }
     }
 }
-
-@Preview(showBackground = true)
-@Composable
-fun LoginScreenPreview() {
-    LoginContent("test@test.com", {}, "1234", {}, null, false, true, {}, {})
-}

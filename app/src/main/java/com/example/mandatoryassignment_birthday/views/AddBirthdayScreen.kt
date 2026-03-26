@@ -39,8 +39,10 @@ import androidx.compose.ui.unit.dp
 import com.example.mandatoryassignment_birthday.viewmodel.AuthViewModel
 import com.example.mandatoryassignment_birthday.viewmodel.BirthdayViewModel
 import org.koin.androidx.compose.koinViewModel
-import java.util.Calendar
-import java.util.Date
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,12 +65,10 @@ fun AddBirthdayScreen(
     val datePickerState = rememberDatePickerState()
     var showDatePicker by remember { mutableStateOf(false) }
 
-    // Helper to format the display date
+    // Helper to format the display date using LocalDate
     val selectedDateText = datePickerState.selectedDateMillis?.let {
-        val date = Date(it)
-        val calendar = Calendar.getInstance()
-        calendar.time = date
-        "${calendar.get(Calendar.DAY_OF_MONTH)}/${calendar.get(Calendar.MONTH) + 1}/${calendar.get(Calendar.YEAR)}"
+        val date = Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDate()
+        date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
     } ?: "Select Date"
 
     // Fetch data if we are editing and the list is empty
@@ -85,9 +85,8 @@ fun AddBirthdayScreen(
             if (existing != null) {
                 name = existing.name
                 remarks = existing.description ?: ""
-                val calendar = Calendar.getInstance()
-                calendar.set(existing.birthYear, existing.birthMonth - 1, existing.birthDayOfMonth)
-                datePickerState.selectedDateMillis = calendar.timeInMillis
+                val localDate = LocalDate.of(existing.birthYear, existing.birthMonth, existing.birthDayOfMonth)
+                datePickerState.selectedDateMillis = localDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
             }
         }
     }
@@ -177,10 +176,10 @@ fun AddBirthdayScreen(
                     val currentUserEmail = user?.email
 
                     if (millis != null && currentUserEmail != null) {
-                        val calendar = Calendar.getInstance().apply { timeInMillis = millis }
-                        val year = calendar.get(Calendar.YEAR)
-                        val month = calendar.get(Calendar.MONTH) + 1
-                        val day = calendar.get(Calendar.DAY_OF_MONTH)
+                        val localDate = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate()
+                        val year = localDate.year
+                        val month = localDate.monthValue
+                        val day = localDate.dayOfMonth
 
                         if (birthdayId == null || birthdayId == -1) {
                             viewModel.addBirthday(currentUserEmail, name, year, month, day, remarks)
