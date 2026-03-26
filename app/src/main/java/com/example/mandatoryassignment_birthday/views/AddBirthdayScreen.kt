@@ -2,11 +2,11 @@ package com.example.mandatoryassignment_birthday.views
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -34,7 +34,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.mandatoryassignment_birthday.viewmodel.AuthViewModel
@@ -52,6 +51,8 @@ fun AddBirthdayScreen(
     authViewModel: AuthViewModel = koinViewModel()
 ) {
     var name by remember { mutableStateOf("") }
+    var remarks by remember { mutableStateOf("") }
+
     val user by authViewModel.userState.collectAsState()
     
     val isLoading by viewModel.isLoading.collectAsState()
@@ -83,6 +84,7 @@ fun AddBirthdayScreen(
             val existing = viewModel.getBirthdayById(birthdayId)
             if (existing != null) {
                 name = existing.name
+                remarks = existing.description ?: ""
                 val calendar = Calendar.getInstance()
                 calendar.set(existing.birthYear, existing.birthMonth - 1, existing.birthDayOfMonth)
                 datePickerState.selectedDateMillis = calendar.timeInMillis
@@ -157,6 +159,16 @@ fun AddBirthdayScreen(
                 )
             )
 
+            OutlinedTextField(
+                value = remarks,
+                onValueChange = { remarks = it },
+                label = { Text("Remarks (Optional)") },
+                modifier = Modifier.fillMaxWidth().height(100.dp),
+                singleLine = false,
+                maxLines = 4,
+                enabled = !isLoading
+            )
+
             Spacer(modifier = Modifier.weight(1f))
 
             Button(
@@ -171,9 +183,9 @@ fun AddBirthdayScreen(
                         val day = calendar.get(Calendar.DAY_OF_MONTH)
 
                         if (birthdayId == null || birthdayId == -1) {
-                            viewModel.addBirthday(currentUserEmail, name, year, month, day)
+                            viewModel.addBirthday(currentUserEmail, name, year, month, day, remarks)
                         } else {
-                            viewModel.updateBirthday(birthdayId, name, year, month, day)
+                            viewModel.updateBirthday(birthdayId, name, year, month, day, remarks)
                         }
                     }
                 },
