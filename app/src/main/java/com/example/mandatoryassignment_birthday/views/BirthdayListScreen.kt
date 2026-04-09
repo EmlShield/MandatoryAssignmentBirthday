@@ -13,11 +13,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
@@ -26,6 +24,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -39,11 +38,16 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -80,6 +84,9 @@ fun BirthdayListScreen(
     val sortOrder by birthdayViewModel.sortOrder.collectAsState()
     val query by birthdayViewModel.filterQuery.collectAsState()
 
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var idToDelete by remember { mutableIntStateOf(-1) }
+
     // Fetch the birthdays when the screen is first displayed
     LaunchedEffect(user) {
         val email = user?.email
@@ -88,6 +95,32 @@ fun BirthdayListScreen(
         } else if (user == null) {
             onLogout()
         }
+    }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Confirm Delete") },
+            text = { Text("Are you sure you want to delete this birthday? This action cannot be undone.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        birthdayViewModel.deleteBirthday(idToDelete)
+                        showDeleteDialog = false
+                    }
+                ) {
+                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showDeleteDialog = false
+                    }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 
     Scaffold(
@@ -151,7 +184,10 @@ fun BirthdayListScreen(
                     // Only show the content if not loading and no error
                     BirthdayListContent(
                         birthdays = birthdayList,
-                        onDeleteClick = { id -> birthdayViewModel.deleteBirthday(id) },
+                        onDeleteClick = { id ->
+                            idToDelete = id
+                            showDeleteDialog = true
+                        },
                         onEditClick = { id -> onEditBirthday(id) },
                         onCardClick = { id -> onSeeDetails(id) }
                     )
