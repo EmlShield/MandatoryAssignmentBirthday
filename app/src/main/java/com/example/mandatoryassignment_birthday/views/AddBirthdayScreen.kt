@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.DateRange
@@ -42,6 +44,7 @@ import org.koin.androidx.compose.koinViewModel
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -67,9 +70,13 @@ fun AddBirthdayScreen(
 
     // Helper to format the display date using LocalDate
     val selectedDateText = datePickerState.selectedDateMillis?.let {
-        val date = Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDate()
+        val date = Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate()
         date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
     } ?: "Select Date"
+
+    var wasAttempted by remember { mutableStateOf(false) }
+    val isNameValid = name.isNotBlank()
+    val isDateValid = datePickerState.selectedDateMillis != null
 
     // Fetch data if we are editing and the list is empty
     LaunchedEffect(user, birthdays) {
@@ -86,7 +93,7 @@ fun AddBirthdayScreen(
                 name = existing.name
                 remarks = existing.description ?: ""
                 val localDate = LocalDate.of(existing.birthYear, existing.birthMonth, existing.birthDayOfMonth)
-                datePickerState.selectedDateMillis = localDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                datePickerState.selectedDateMillis = localDate.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
             }
         }
     }
@@ -116,7 +123,8 @@ fun AddBirthdayScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp),
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             if (errorMessage != null) {
@@ -133,7 +141,13 @@ fun AddBirthdayScreen(
                 onValueChange = { name = it },
                 label = { Text("Name") },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = !isLoading
+                enabled = !isLoading,
+                isError = wasAttempted && !isNameValid,
+                supportingText = {
+                    if (wasAttempted && !isNameValid) {
+                        Text("Name cannot be empty", color = MaterialTheme.colorScheme.error)
+                    }
+                }
             )
 
             OutlinedTextField(
@@ -144,18 +158,18 @@ fun AddBirthdayScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable(enabled = !isLoading) { showDatePicker = true },
+                isError = wasAttempted && !isDateValid,
+                supportingText = {
+                    if (wasAttempted && !isDateValid) {
+                        Text("Please select a date", color = MaterialTheme.colorScheme.error)
+                    }
+                },
                 trailingIcon = {
                     IconButton(onClick = { showDatePicker = true }, enabled = !isLoading) {
                         Icon(Icons.Default.DateRange, contentDescription = "Select Date")
                     }
                 },
-                enabled = false,
-                colors = OutlinedTextFieldDefaults.colors(
-                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                    disabledBorderColor = MaterialTheme.colorScheme.outline,
-                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    disabledLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                enabled = true
             )
 
             OutlinedTextField(
@@ -172,24 +186,27 @@ fun AddBirthdayScreen(
 
             Button(
                 onClick = {
-                    val millis = datePickerState.selectedDateMillis
-                    val currentUserEmail = user?.email
+                    wasAttempted = true
+                    if (isNameValid && isDateValid) {
+                        val millis = datePickerState.selectedDateMillis
+                        val currentUserEmail = user?.email
 
-                    if (millis != null && currentUserEmail != null) {
-                        val localDate = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate()
-                        val year = localDate.year
-                        val month = localDate.monthValue
-                        val day = localDate.dayOfMonth
+                        if (millis != null && currentUserEmail != null) {
+                            val localDate = Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
+                            val year = localDate.year
+                            val month = localDate.monthValue
+                            val day = localDate.dayOfMonth
 
-                        if (birthdayId == null || birthdayId == -1) {
-                            viewModel.addBirthday(currentUserEmail, name, year, month, day, remarks)
-                        } else {
-                            viewModel.updateBirthday(birthdayId, name, year, month, day, remarks)
+                            if (birthdayId == null || birthdayId == -1) {
+                                viewModel.addBirthday(currentUserEmail, name, year, month, day, remarks)
+                            } else {
+                                viewModel.updateBirthday(birthdayId, name, year, month, day, remarks)
+                            }
                         }
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = name.isNotBlank() && datePickerState.selectedDateMillis != null && user != null && !isLoading
+                enabled = !isLoading
             ) {
                 if (isLoading) {
                     CircularProgressIndicator(

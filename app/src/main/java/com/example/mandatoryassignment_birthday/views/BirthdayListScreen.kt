@@ -1,17 +1,22 @@
 package com.example.mandatoryassignment_birthday.views
 
+import android.content.res.Configuration
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Add
@@ -19,6 +24,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -32,15 +38,25 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
+import com.example.mandatoryassignment_birthday.R
 import com.example.mandatoryassignment_birthday.data.model.Birthday
 import com.example.mandatoryassignment_birthday.data.model.SortOrder
 import com.example.mandatoryassignment_birthday.viewmodel.AuthViewModel
@@ -68,6 +84,9 @@ fun BirthdayListScreen(
     val sortOrder by birthdayViewModel.sortOrder.collectAsState()
     val query by birthdayViewModel.filterQuery.collectAsState()
 
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var idToDelete by remember { mutableIntStateOf(-1) }
+
     // Fetch the birthdays when the screen is first displayed
     LaunchedEffect(user) {
         val email = user?.email
@@ -76,6 +95,32 @@ fun BirthdayListScreen(
         } else if (user == null) {
             onLogout()
         }
+    }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Confirm Delete") },
+            text = { Text("Are you sure you want to delete this birthday? This action cannot be undone.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        birthdayViewModel.deleteBirthday(idToDelete)
+                        showDeleteDialog = false
+                    }
+                ) {
+                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showDeleteDialog = false
+                    }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 
     Scaffold(
@@ -139,7 +184,10 @@ fun BirthdayListScreen(
                     // Only show the content if not loading and no error
                     BirthdayListContent(
                         birthdays = birthdayList,
-                        onDeleteClick = { id -> birthdayViewModel.deleteBirthday(id) },
+                        onDeleteClick = { id ->
+                            idToDelete = id
+                            showDeleteDialog = true
+                        },
                         onEditClick = { id -> onEditBirthday(id) },
                         onCardClick = { id -> onSeeDetails(id) }
                     )
@@ -157,10 +205,14 @@ fun BirthdayListContent(
     onCardClick: (Int) -> Unit,
     modifier: Modifier = Modifier) {
     Box(modifier = modifier) {
+        val configuration = LocalConfiguration.current
+        val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+
         // Display the list of birthdays in a LazyColumn
-        LazyColumn(
+        LazyVerticalGrid(
+            columns = if (isLandscape) GridCells.Fixed(2) else GridCells.Fixed(1),
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(8.dp)
+            contentPadding = PaddingValues(bottom = 8.dp)
         ) {
             items(birthdays) { birthday ->
                 // This is a single row in the list
@@ -174,6 +226,19 @@ fun BirthdayListContent(
                         modifier = Modifier.padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        AsyncImage(
+                            model = birthday.pictureUrl ?: "https://placehold.jp/24/cccccc/ffffff/150x150.png?text=No%20Image",
+                            contentDescription = null,
+                            placeholder = painterResource(R.drawable.ic_launcher_foreground),
+                            error = painterResource(R.drawable.ic_launcher_foreground),
+                            modifier = Modifier
+                                .size(50.dp)
+                                .clip(CircleShape),
+                            contentScale = ContentScale.Crop
+                        )
+
+                        Spacer(modifier = Modifier.width(16.dp))
+
                         Column(modifier = Modifier.weight(1f)) {
                             Text(text = birthday.name, style = MaterialTheme.typography.titleLarge)
                             Text(text = "Date: ${birthday.birthDayOfMonth}/${birthday.birthMonth} - ${birthday.birthYear}", style = MaterialTheme.typography.bodyMedium)

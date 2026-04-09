@@ -60,6 +60,10 @@ class BirthdayViewModel(private val repository: BirthdayRepository) : ViewModel(
 
     fun setFilterQuery(query: String) { _filterQuery.value = query }
 
+    fun setError(message: String?) {
+        _errorMessage.value = message
+    }
+
     fun clearError() {
         _errorMessage.value = null
     }
