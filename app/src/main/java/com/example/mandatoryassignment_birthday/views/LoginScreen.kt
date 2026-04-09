@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -85,7 +87,10 @@ fun LoginContent(
     onActionClick: () -> Unit
 ) {
     Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -116,7 +121,11 @@ fun LoginContent(
 
         // Show error message if login fails
         if (error != null) {
-            Text(text = error, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(8.dp))
+            Text(
+                text = error,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(8.dp)
+            )
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -140,4 +149,10 @@ fun LoginContent(
             )
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun LoginScreenPreview() {
+    LoginContent("test@test.com", {}, "1234", {}, null, false, true, {}, {})
 }

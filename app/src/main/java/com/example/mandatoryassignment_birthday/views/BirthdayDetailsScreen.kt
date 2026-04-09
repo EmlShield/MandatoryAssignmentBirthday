@@ -1,11 +1,15 @@
 package com.example.mandatoryassignment_birthday.views
 
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.CircularProgressIndicator
@@ -23,6 +27,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import com.example.mandatoryassignment_birthday.viewmodel.AuthViewModel
 import com.example.mandatoryassignment_birthday.viewmodel.BirthdayViewModel
@@ -40,6 +45,10 @@ fun BirthdayDetailsScreen(
     val birthdays by viewModel.birthdays.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
+    // Get specific birthday from the list
+    val birthday = viewModel.getBirthdayById(birthdayId)
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     // Ensure data is loaded
     LaunchedEffect(user, birthdays) {
@@ -48,9 +57,6 @@ fun BirthdayDetailsScreen(
             viewModel.fetchBirthdays(email)
         }
     }
-
-    // Get specific birthday from the list
-    val birthday = viewModel.getBirthdayById(birthdayId)
 
     Scaffold(
         topBar = {
@@ -77,23 +83,32 @@ fun BirthdayDetailsScreen(
                     modifier = Modifier.padding(16.dp).align(Alignment.Center)
                 )
             } else if (birthday != null) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text(text = birthday.name, style = MaterialTheme.typography.headlineLarge)
+                if (isLandscape) {
+                    Row(modifier = Modifier.padding(16.dp).fillMaxWidth()) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(text = birthday.name, style = MaterialTheme.typography.headlineLarge)
+                        }
+                        Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+                            DetailRow(label = "Date", value = "${birthday.birthDayOfMonth}/${birthday.birthMonth}-${birthday.birthYear}")
+                            DetailRow(label = "Current Age", value = "${birthday.age ?: "N/A"} years old.")
+                            DetailRow(label = "Remarks", value = birthday.description ?: "No remarks provided.")
+                        }
+                    }
+                } else {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(text = birthday.name, style = MaterialTheme.typography.headlineLarge)
 
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-                    DetailRow(label = "Date of Birth", value = "${birthday.birthDayOfMonth}/${birthday.birthMonth}-${birthday.birthYear}")
-
-                    DetailRow(label = "Current Age", value = "${birthday.age ?: "N/A"} years old.")
-
-                    DetailRow(label = "Remarks", value = birthday.description ?: "No remarks provided.")
-
-                    DetailRow(label = "Owner (Email)", value = birthday.userId)
+                        DetailRow(label = "Date of Birth", value = "${birthday.birthDayOfMonth}/${birthday.birthMonth}-${birthday.birthYear}")
+                        DetailRow(label = "Current Age", value = "${birthday.age ?: "N/A"} years old.")
+                        DetailRow(label = "Remarks", value = birthday.description ?: "No remarks provided.")
+                    }
                 }
             } else {
                 Text(
