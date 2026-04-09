@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -27,8 +28,13 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
+import com.example.mandatoryassignment_birthday.R
 import com.example.mandatoryassignment_birthday.viewmodel.AuthViewModel
 import com.example.mandatoryassignment_birthday.viewmodel.BirthdayViewModel
 import org.koin.androidx.compose.koinViewModel
@@ -88,6 +94,18 @@ fun BirthdayDetailsScreen(
                         Column(modifier = Modifier.weight(1f)) {
                             Text(text = birthday.name, style = MaterialTheme.typography.headlineLarge)
                         }
+                        AsyncImage(
+                            model = birthday.pictureUrl ?: "https://placehold.jp/24/cccccc/ffffff/150x150.png?text=No%20Image",
+                            contentDescription = "Birthday Image",
+                            placeholder = painterResource(R.drawable.ic_launcher_foreground),
+                            error = painterResource(R.drawable.ic_launcher_foreground),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp)
+                                .clip(MaterialTheme.shapes.medium),
+                            contentScale = ContentScale.Crop
+                        )
+
                         Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())) {
                             DetailRow(label = "Date", value = "${birthday.birthDayOfMonth}/${birthday.birthMonth}-${birthday.birthYear}")
                             DetailRow(label = "Current Age", value = "${birthday.age ?: "N/A"} years old.")
@@ -101,6 +119,18 @@ fun BirthdayDetailsScreen(
                             .padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
+                        AsyncImage(
+                            model = birthday.pictureUrl ?: "https://placehold.jp/24/cccccc/ffffff/150x150.png?text=No%20Image",
+                            contentDescription = "Birthday Image",
+                            placeholder = painterResource(R.drawable.ic_launcher_foreground),
+                            error = painterResource(R.drawable.ic_launcher_foreground),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp)
+                                .clip(MaterialTheme.shapes.medium),
+                            contentScale = ContentScale.Crop
+                        )
+
                         Text(text = birthday.name, style = MaterialTheme.typography.headlineLarge)
 
                         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
