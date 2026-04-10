@@ -13,6 +13,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -21,11 +24,15 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,6 +51,7 @@ import org.koin.androidx.compose.koinViewModel
 fun BirthdayDetailsScreen(
     birthdayId: Int,
     onBack: () -> Unit,
+    onEdit: (Int) -> Unit,
     viewModel: BirthdayViewModel = koinViewModel(),
     authViewModel: AuthViewModel = koinViewModel()
 ) {
@@ -51,10 +59,31 @@ fun BirthdayDetailsScreen(
     val birthdays by viewModel.birthdays.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
-    // Get specific birthday from the list
-    val birthday = viewModel.getBirthdayById(birthdayId)
+
+    // Find the birthday in the list so it updates when the list updates
+    val birthday = remember(birthdays, birthdayId) {
+        birthdays.find { it.id == birthdayId }
+    }
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.deleteBirthday(birthdayId)
+                    showDeleteDialog = false
+                    onBack()
+                }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = { TextButton(onClick = { showDeleteDialog = false }) { Text("Cancel") } },
+            title = { Text("Confirm Delete") },
+            text = { Text("Are you sure you want to delete this birthday? This action cannot be undone.") }
+        )
+    }
 
     // Ensure data is loaded
     LaunchedEffect(user, birthdays) {
@@ -74,6 +103,14 @@ fun BirthdayDetailsScreen(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back"
                         )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { onEdit(birthdayId) }) {
+                        Icon(Icons.Default.Edit, contentDescription = "Edit")
+                    }
+                    IconButton(onClick = { showDeleteDialog = true }) {
+                        Icon(Icons.Default.Delete, contentDescription = "Delete")
                     }
                 }
             )
@@ -108,7 +145,7 @@ fun BirthdayDetailsScreen(
 
                         Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())) {
                             DetailRow(label = "Date", value = "${birthday.birthDayOfMonth}/${birthday.birthMonth}-${birthday.birthYear}")
-                            DetailRow(label = "Current Age", value = "${birthday.age ?: "N/A"} years old.")
+                            DetailRow(label = "Current Age", value = "${birthday.displayAge ?: "N/A"} years old.")
                             DetailRow(label = "Remarks", value = birthday.description ?: "No remarks provided.")
                         }
                     }
@@ -136,7 +173,7 @@ fun BirthdayDetailsScreen(
                         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
                         DetailRow(label = "Date of Birth", value = "${birthday.birthDayOfMonth}/${birthday.birthMonth}-${birthday.birthYear}")
-                        DetailRow(label = "Current Age", value = "${birthday.age ?: "N/A"} years old.")
+                        DetailRow(label = "Current Age", value = "${birthday.displayAge} years old.")
                         DetailRow(label = "Remarks", value = birthday.description ?: "No remarks provided.")
                     }
                 }

@@ -23,22 +23,34 @@ data class Birthday (
     @SerializedName("pictureUrl")
     val pictureUrl: String?,
     @SerializedName("age")
-    val age: Int? = null
+    val age: Int
 ) {
     fun daysUntilNextBirthday(): Long {
         val today = LocalDate.now()
+        val validMonth = birthMonth.coerceIn(1, 12)
+        val validDay = birthDayOfMonth.coerceIn(1, 31)
 
-        var nextBirthday = LocalDate.of(today.year, birthMonth, birthDayOfMonth)
+        var nextBirthday = try {
+            LocalDate.of(today.year, validMonth, validDay)
+        } catch (e: Exception) {
+            LocalDate.of(today.year, validMonth, 1).withDayOfMonth(1).plusMonths(1).minusDays(1)
+        }
 
         if (nextBirthday.isBefore(today) || nextBirthday.isEqual(today)) {
             nextBirthday = nextBirthday.plusYears(1)
         }
         return ChronoUnit.DAYS.between(today, nextBirthday)
     }
-}
 
-fun calculateAge(year: Int, month: Int, day: Int): Int {
-    val birthDate = LocalDate.of(year, month, day)
-    val today = LocalDate.now()
-    return Period.between(birthDate, today).years
+    val displayAge: Int
+        get() {
+            return try {
+                val birthDate = LocalDate.of(birthYear, birthMonth.coerceIn(1, 12), birthDayOfMonth.coerceIn(1, 31))
+                val today = LocalDate.now()
+                val calculated = Period.between(birthDate, today).years
+                if (calculated < 0) 0 else calculated
+            } catch (e: Exception) {
+                0
+            }
+        }
 }

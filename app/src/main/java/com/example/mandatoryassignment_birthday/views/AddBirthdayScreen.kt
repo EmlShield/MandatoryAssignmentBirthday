@@ -23,7 +23,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -43,7 +42,6 @@ import com.example.mandatoryassignment_birthday.viewmodel.BirthdayViewModel
 import org.koin.androidx.compose.koinViewModel
 import java.time.Instant
 import java.time.LocalDate
-import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
@@ -93,7 +91,10 @@ fun AddBirthdayScreen(
                 name = existing.name
                 remarks = existing.description ?: ""
                 val localDate = LocalDate.of(existing.birthYear, existing.birthMonth, existing.birthDayOfMonth)
-                datePickerState.selectedDateMillis = localDate.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+                val millis = localDate.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+                datePickerState.selectedDateMillis = millis
+                // Ensure the DatePicker opens at the month of the selected birthday
+                datePickerState.displayedMonthMillis = millis
             }
         }
     }

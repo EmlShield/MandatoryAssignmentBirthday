@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mandatoryassignment_birthday.data.model.Birthday
 import com.example.mandatoryassignment_birthday.data.model.SortOrder
-import com.example.mandatoryassignment_birthday.data.model.calculateAge
 import com.example.mandatoryassignment_birthday.data.network.NetworkResult
 import com.example.mandatoryassignment_birthday.data.repository.BirthdayRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -17,6 +16,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.Period
 
 class BirthdayViewModel(private val repository: BirthdayRepository) : ViewModel() {
 
@@ -45,14 +46,13 @@ class BirthdayViewModel(private val repository: BirthdayRepository) : ViewModel(
         } else {
             list.filter {
                 it.name.contains(query, ignoreCase = true) ||
-                it.age?.toString()?.contains(query) == true
+                it.displayAge.toString().contains(query)
             }
         }
         when (order) {
             SortOrder.NAME -> filteredList.sortedBy { it.name.lowercase() }
             SortOrder.DATE -> filteredList.sortedWith(compareBy({ it.birthMonth }, { it.birthDayOfMonth }))
-            SortOrder.AGE -> filteredList.sortedByDescending { it.age ?: 0 }
-
+            SortOrder.AGE -> filteredList.sortedByDescending { it.displayAge }
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -72,8 +72,12 @@ class BirthdayViewModel(private val repository: BirthdayRepository) : ViewModel(
         _isLoading.value = true
         when (val result = repository.getBirthdays(userId)) {
             is NetworkResult.Success -> {
-                _birthdays.value = result.data
+                val data = result.data
+                _birthdays.value = data
                 _errorMessage.value = null
+                
+                // Sync out-of-date ages to the API silently
+                syncAges(data)
             }
             is NetworkResult.Error -> {
                 _errorMessage.value = result.message
@@ -85,6 +89,17 @@ class BirthdayViewModel(private val repository: BirthdayRepository) : ViewModel(
         _isLoading.value = false
     }
 
+    private fun syncAges(list: List<Birthday>) {
+        viewModelScope.launch {
+            list.forEach { birthday ->
+                if (birthday.age != birthday.displayAge) {
+                    val updated = birthday.copy(age = birthday.displayAge)
+                    repository.updateBirthday(updated.id, updated)
+                }
+            }
+        }
+    }
+
     fun fetchBirthdays(userId: String) {
         currentUserId = userId
         viewModelScope.launch {
@@ -92,11 +107,16 @@ class BirthdayViewModel(private val repository: BirthdayRepository) : ViewModel(
         }
     }
 
+    private fun calculateAgeInternal(year: Int, month: Int, day: Int): Int {
+        return try {
+            val birthDate = LocalDate.of(year, month.coerceIn(1, 12), day.coerceIn(1, 31))
+            Period.between(birthDate, LocalDate.now()).years.coerceAtLeast(0)
+        } catch (e: Exception) { 0 }
+    }
+
     fun addBirthday(userId: String, name: String, year: Int, month: Int, day: Int, remarks: String) {
         viewModelScope.launch {
             _isLoading.value = true
-
-            val calculatedAge = calculateAge(year, month, day)
 
             val newBirthday = Birthday(
                 id = 0,
@@ -107,7 +127,7 @@ class BirthdayViewModel(private val repository: BirthdayRepository) : ViewModel(
                 birthDayOfMonth = day,
                 description = remarks,
                 pictureUrl = null,
-                age = calculatedAge
+                age = calculateAgeInternal(year, month, day)
             )
 
             when (val result = repository.addBirthday(newBirthday)) {
@@ -154,7 +174,8 @@ class BirthdayViewModel(private val repository: BirthdayRepository) : ViewModel(
                     birthYear = year,
                     birthMonth = month,
                     birthDayOfMonth = day,
-                    description = remarks
+                    description = remarks,
+                    age = calculateAgeInternal(year, month, day)
                 )
                 when (val result = repository.updateBirthday(id, updatedBirthday)) {
                     is NetworkResult.Success -> {
