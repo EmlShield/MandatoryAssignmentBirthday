@@ -59,8 +59,11 @@ fun BirthdayDetailsScreen(
     val birthdays by viewModel.birthdays.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
-    // Get specific birthday from the list
-    val birthday = viewModel.getBirthdayById(birthdayId)
+
+    // Find the birthday in the list so it updates when the list updates
+    val birthday = remember(birthdays, birthdayId) {
+        birthdays.find { it.id == birthdayId }
+    }
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
@@ -142,7 +145,7 @@ fun BirthdayDetailsScreen(
 
                         Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())) {
                             DetailRow(label = "Date", value = "${birthday.birthDayOfMonth}/${birthday.birthMonth}-${birthday.birthYear}")
-                            DetailRow(label = "Current Age", value = "${birthday.age ?: "N/A"} years old.")
+                            DetailRow(label = "Current Age", value = "${birthday.displayAge ?: "N/A"} years old.")
                             DetailRow(label = "Remarks", value = birthday.description ?: "No remarks provided.")
                         }
                     }
@@ -170,7 +173,7 @@ fun BirthdayDetailsScreen(
                         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
                         DetailRow(label = "Date of Birth", value = "${birthday.birthDayOfMonth}/${birthday.birthMonth}-${birthday.birthYear}")
-                        DetailRow(label = "Current Age", value = "${birthday.age ?: "N/A"} years old.")
+                        DetailRow(label = "Current Age", value = "${birthday.displayAge} years old.")
                         DetailRow(label = "Remarks", value = birthday.description ?: "No remarks provided.")
                     }
                 }
