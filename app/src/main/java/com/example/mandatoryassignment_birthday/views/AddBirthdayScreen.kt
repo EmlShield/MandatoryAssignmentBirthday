@@ -91,7 +91,10 @@ fun AddBirthdayScreen(
                 name = existing.name
                 remarks = existing.description ?: ""
                 val localDate = LocalDate.of(existing.birthYear, existing.birthMonth, existing.birthDayOfMonth)
-                datePickerState.selectedDateMillis = localDate.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+                val millis = localDate.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+                datePickerState.selectedDateMillis = millis
+                // Ensure the DatePicker opens at the month of the selected birthday
+                datePickerState.displayedMonthMillis = millis
             }
         }
     }

@@ -9,10 +9,12 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.mandatoryassignment_birthday.viewmodel.BirthdayViewModel
 import com.example.mandatoryassignment_birthday.views.AddBirthdayScreen
 import com.example.mandatoryassignment_birthday.views.BirthdayDetailsScreen
 import com.example.mandatoryassignment_birthday.views.BirthdayListScreen
 import com.example.mandatoryassignment_birthday.views.LoginScreen
+import org.koin.androidx.compose.koinViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -26,39 +28,37 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
+    
+    // Create the ViewModel here so it's shared across all screens in the NavHost
+    val birthdayViewModel: BirthdayViewModel = koinViewModel()
 
     NavHost(navController = navController, startDestination = "login") {
 
-        // Destination: Login Screen
         composable("login") {
             LoginScreen(
                 onLoginSuccess = {
-                    // Navigate to the birthday list screen on successful login
                     navController.navigate("birthdayList") {
-                        // Clear the back stack to prevent going back to the login screen
                         popUpTo("login") { inclusive = true }
                     }
                 }
             )
         }
 
-        // Destination: Birthday List Screen
         composable("birthdayList") {
             BirthdayListScreen(
+                birthdayViewModel = birthdayViewModel, // Pass the shared VM
                 onLogout = {
                     navController.navigate("login") {
-                        // Clear the list screen from history so they can't "Go Back" into the app
                         popUpTo("birthdayList") { inclusive = true }
                     }
                 },
                 onEditBirthday = { id ->
                     if (id == -1) {
-                        navController.navigate("birthdayForm") // Add Mode
+                        navController.navigate("birthdayForm")
                     } else {
-                        navController.navigate("birthdayForm?birthdayId=$id") // Edit Mode
+                        navController.navigate("birthdayForm?birthdayId=$id")
                     }
                 },
-                // Handle Details Navigation
                 onSeeDetails = { id ->
                     navController.navigate("birthdayDetails/$id")
                 }
@@ -76,6 +76,7 @@ fun AppNavigation() {
 
             AddBirthdayScreen(
                 birthdayId = if (id == -1) null else id,
+                viewModel = birthdayViewModel, // Pass the shared VM
                 onBack = { navController.popBackStack() }
             )
         }
@@ -86,9 +87,9 @@ fun AppNavigation() {
         ) { backStackEntry ->
             val id = backStackEntry.arguments?.getInt("birthdayId") ?: -1
 
-            // Call screen
             BirthdayDetailsScreen(
                 birthdayId = id,
+                viewModel = birthdayViewModel, // Pass the shared VM
                 onBack = { navController.popBackStack() },
                 onEdit = { birthdayId ->
                     navController.navigate("birthdayForm?birthdayId=$birthdayId")
