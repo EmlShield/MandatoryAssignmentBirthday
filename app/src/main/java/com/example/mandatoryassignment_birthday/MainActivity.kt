@@ -89,7 +89,10 @@ fun AppNavigation() {
             // Call screen
             BirthdayDetailsScreen(
                 birthdayId = id,
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                onEdit = { birthdayId ->
+                    navController.navigate("birthdayForm?birthdayId=$birthdayId")
+                }
             )
         }
     }
