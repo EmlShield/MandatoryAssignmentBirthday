@@ -1,11 +1,14 @@
 package com.example.mandatoryassignment_birthday.viewmodel
 
+import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mandatoryassignment_birthday.data.model.Birthday
 import com.example.mandatoryassignment_birthday.data.model.SortOrder
 import com.example.mandatoryassignment_birthday.data.network.NetworkResult
 import com.example.mandatoryassignment_birthday.data.repository.BirthdayRepository
+import com.example.mandatoryassignment_birthday.data.repository.ImageRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -19,7 +22,10 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.Period
 
-class BirthdayViewModel(private val repository: BirthdayRepository) : ViewModel() {
+class BirthdayViewModel(
+    private val repository: BirthdayRepository,
+    private val imageRepository: ImageRepository
+) : ViewModel() {
 
     private var currentUserId: String? = null
 
@@ -94,7 +100,12 @@ class BirthdayViewModel(private val repository: BirthdayRepository) : ViewModel(
             list.forEach { birthday ->
                 if (birthday.age != birthday.displayAge) {
                     val updated = birthday.copy(age = birthday.displayAge)
-                    repository.updateBirthday(updated.id, updated)
+                    when (val result = repository.updateBirthday(updated.id, updated)) {
+                        is NetworkResult.Error -> {
+                            Log.e("BirthdayViewModel", "Failed to sync age for ${birthday.name}: ${result.message}")
+                        }
+                        else -> {}
+                    }
                 }
             }
         }
@@ -111,12 +122,32 @@ class BirthdayViewModel(private val repository: BirthdayRepository) : ViewModel(
         return try {
             val birthDate = LocalDate.of(year, month.coerceIn(1, 12), day.coerceIn(1, 31))
             Period.between(birthDate, LocalDate.now()).years.coerceAtLeast(0)
-        } catch (e: Exception) { 0 }
+        } catch (e: Exception) {
+            Log.e("BirthdayViewModel", "Error calculating age for date: $year-$month-$day", e)
+            0
+        }
     }
 
-    fun addBirthday(userId: String, name: String, year: Int, month: Int, day: Int, remarks: String) {
+    fun addBirthday(
+        userId: String,
+        name: String,
+        year: Int,
+        month: Int,
+        day: Int,
+        remarks: String,
+        imageUri: Uri?
+    ) {
         viewModelScope.launch {
             _isLoading.value = true
+            _errorMessage.value = null
+
+            var uploadedImageUrl: String? = null
+            if (imageUri != null) {
+                uploadedImageUrl = imageRepository.uploadImage(imageUri)
+                if (uploadedImageUrl == null) {
+                    Log.e("BirthdayViewModel", "Image upload failed, but continuing with null URL.")
+                }
+            }
 
             val newBirthday = Birthday(
                 id = 0,
@@ -126,7 +157,7 @@ class BirthdayViewModel(private val repository: BirthdayRepository) : ViewModel(
                 birthMonth = month,
                 birthDayOfMonth = day,
                 description = remarks,
-                pictureUrl = null,
+                pictureUrl = uploadedImageUrl,
                 age = calculateAgeInternal(year, month, day)
             )
 
@@ -164,18 +195,37 @@ class BirthdayViewModel(private val repository: BirthdayRepository) : ViewModel(
         return _birthdays.value.find { it.id == id }
     }
 
-    fun updateBirthday(id: Int, name: String, year: Int, month: Int, day: Int, remarks: String) {
+    fun updateBirthday(
+        id: Int,
+        name: String,
+        year: Int,
+        month: Int,
+        day: Int,
+        remarks: String,
+        imageUri: Uri? = null
+    ) {
         viewModelScope.launch {
             _isLoading.value = true
+
+            var uploadedImageUrl: String? = null
+            if (imageUri != null) {
+                uploadedImageUrl = imageRepository.uploadImage(imageUri)
+                if (uploadedImageUrl == null) {
+                    Log.e("BirthdayViewModel", "Image upload failed, but continuing with null URL.")
+                }
+            }
+            
             val existing = getBirthdayById(id)
             if (existing != null) {
+                val finalImageUrl = uploadedImageUrl ?: existing.pictureUrl
                 val updatedBirthday = existing.copy(
                     name = name,
                     birthYear = year,
                     birthMonth = month,
                     birthDayOfMonth = day,
                     description = remarks,
-                    age = calculateAgeInternal(year, month, day)
+                    age = calculateAgeInternal(year, month, day),
+                    pictureUrl = finalImageUrl
                 )
                 when (val result = repository.updateBirthday(id, updatedBirthday)) {
                     is NetworkResult.Success -> {

@@ -1,5 +1,6 @@
 package com.example.mandatoryassignment_birthday.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mandatoryassignment_birthday.data.model.User
@@ -37,6 +38,7 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
                     _error.value = "Invalid email or password"
                 }
             } catch (e: Exception) {
+                Log.e("AuthViewModel", "Login process failed", e)
                 _error.value = e.localizedMessage ?: "Login Failed"
             } finally {
                 _isLoading.value = false
@@ -62,6 +64,7 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
                 }
             } catch (e: Exception) {
                 // Shows real errors like "Email already in use"
+                Log.e("AuthViewModel", "Sign up process failed", e)
                 _error.value = e.localizedMessage ?: "Sign Up Failed"
             } finally {
                 _isLoading.value = false

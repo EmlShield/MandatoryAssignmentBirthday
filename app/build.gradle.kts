@@ -15,11 +15,7 @@ if (localPropertiesFile.exists()) {
 
 android {
     namespace = "com.example.mandatoryassignment_birthday"
-    compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
-    }
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.example.mandatoryassignment_birthday"
@@ -64,7 +60,6 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
-    implementation(libs.firebase.auth)
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.googleid)
@@ -83,4 +78,8 @@ dependencies {
     implementation(libs.koin.androidx.compose)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.coil.compose)
+    implementation(libs.firebase.auth)
+    implementation(libs.google.firebase.storage)
+    implementation(libs.kotlinx.coroutines.play.services)
+    implementation(libs.androidx.compose.material.icons.extended)
 }

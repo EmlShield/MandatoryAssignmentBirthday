@@ -6,7 +6,9 @@ import com.example.mandatoryassignment_birthday.data.repository.BirthdayReposito
 import com.example.mandatoryassignment_birthday.viewmodel.AuthViewModel
 import com.example.mandatoryassignment_birthday.viewmodel.BirthdayViewModel
 import com.example.mandatoryassignment_birthday.BuildConfig
+import com.example.mandatoryassignment_birthday.data.repository.ImageRepository
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.storage.FirebaseStorage
 import okhttp3.OkHttpClient
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
@@ -38,7 +40,7 @@ val appModule = module {
     single { BirthdayRepository(get()) }
 
     // Provide the ViewModel
-    viewModel { BirthdayViewModel(get()) }
+    viewModel { BirthdayViewModel(get(), get()) }
 
     // Provide FirebaseAuth instance
     single { FirebaseAuth.getInstance() }
@@ -48,4 +50,10 @@ val appModule = module {
 
     // Provide AuthViewModel
     viewModel { AuthViewModel(get()) }
+
+    // Provide FirebaseStorage instance
+    single { FirebaseStorage.getInstance() }
+
+    // Provide ImageRepository
+    single { ImageRepository(get()) }
 }

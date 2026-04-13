@@ -1,8 +1,14 @@
 package com.example.mandatoryassignment_birthday.views
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -10,9 +16,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -35,8 +43,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.example.mandatoryassignment_birthday.viewmodel.AuthViewModel
 import com.example.mandatoryassignment_birthday.viewmodel.BirthdayViewModel
 import org.koin.androidx.compose.koinViewModel
@@ -55,6 +67,14 @@ fun AddBirthdayScreen(
 ) {
     var name by remember { mutableStateOf("") }
     var remarks by remember { mutableStateOf("") }
+    var imageUri by remember { mutableStateOf<Uri?>(null) }
+    var existingImageUrl by remember { mutableStateOf<String?>(null) }
+
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        imageUri = uri
+    }
 
     val user by authViewModel.userState.collectAsState()
     
@@ -90,6 +110,7 @@ fun AddBirthdayScreen(
             if (existing != null) {
                 name = existing.name
                 remarks = existing.description ?: ""
+                existingImageUrl = existing.pictureUrl
                 val localDate = LocalDate.of(existing.birthYear, existing.birthMonth, existing.birthDayOfMonth)
                 val millis = localDate.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
                 datePickerState.selectedDateMillis = millis
@@ -135,6 +156,50 @@ fun AddBirthdayScreen(
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
+            }
+
+            // Image Picker Section
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Box(
+                        modifier = Modifier
+                            .size(120.dp)
+                            .clip(CircleShape)
+                            .clickable { if (!isLoading) launcher.launch("image/*") },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (imageUri != null) {
+                            AsyncImage(
+                                model = imageUri,
+                                contentDescription = "Selected image",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else if (existingImageUrl != null) {
+                            AsyncImage(
+                                model = existingImageUrl,
+                                contentDescription = "Existing image",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.AddAPhoto,
+                                contentDescription = "Add Photo",
+                                modifier = Modifier.size(48.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                    TextButton(onClick = { launcher.launch("image/*") }, enabled = !isLoading) {
+                        Text(if (imageUri == null && existingImageUrl == null) "Add Photo" else "Change Photo")
+                    }
+                }
             }
 
             OutlinedTextField(
@@ -199,9 +264,9 @@ fun AddBirthdayScreen(
                             val day = localDate.dayOfMonth
 
                             if (birthdayId == null || birthdayId == -1) {
-                                viewModel.addBirthday(currentUserEmail, name, year, month, day, remarks)
+                                viewModel.addBirthday(currentUserEmail, name, year, month, day, remarks, imageUri)
                             } else {
-                                viewModel.updateBirthday(birthdayId, name, year, month, day, remarks)
+                                viewModel.updateBirthday(birthdayId, name, year, month, day, remarks, imageUri)
                             }
                         }
                     }
