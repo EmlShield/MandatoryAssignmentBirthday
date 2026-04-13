@@ -1,5 +1,6 @@
 package com.example.mandatoryassignment_birthday.views
 
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -154,5 +155,15 @@ fun LoginContent(
 @Preview(showBackground = true)
 @Composable
 fun LoginScreenPreview() {
-    LoginContent("test@test.com", {}, "1234", {}, null, false, true, {}, {})
+    LoginContent(
+        email = "test@example.com",
+        onEmailChange = {},
+        password = "password123",
+        onPasswordChange = {},
+        error = null,
+        isLoading = false,
+        isLoginMode = true,
+        onModeChange = {},
+        onActionClick = {}
+    )
 }
