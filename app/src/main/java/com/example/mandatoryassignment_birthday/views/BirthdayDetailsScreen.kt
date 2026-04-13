@@ -39,14 +39,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.mandatoryassignment_birthday.R
+import com.example.mandatoryassignment_birthday.data.model.Birthday
 import com.example.mandatoryassignment_birthday.viewmodel.AuthViewModel
 import com.example.mandatoryassignment_birthday.viewmodel.BirthdayViewModel
 import org.koin.androidx.compose.koinViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BirthdayDetailsScreen(
     birthdayId: Int,
@@ -64,26 +65,6 @@ fun BirthdayDetailsScreen(
     val birthday = remember(birthdays, birthdayId) {
         birthdays.find { it.id == birthdayId }
     }
-    val configuration = LocalConfiguration.current
-    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-
-    var showDeleteDialog by remember { mutableStateOf(false) }
-
-    if (showDeleteDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    viewModel.deleteBirthday(birthdayId)
-                    showDeleteDialog = false
-                    onBack()
-                }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
-            },
-            dismissButton = { TextButton(onClick = { showDeleteDialog = false }) { Text("Cancel") } },
-            title = { Text("Confirm Delete") },
-            text = { Text("Are you sure you want to delete this birthday? This action cannot be undone.") }
-        )
-    }
 
     // Ensure data is loaded
     LaunchedEffect(user, birthdays) {
@@ -91,6 +72,48 @@ fun BirthdayDetailsScreen(
         if (email != null && birthdays.isEmpty()) {
             viewModel.fetchBirthdays(email)
         }
+    }
+
+    BirthdayDetailsContent(
+        birthday = birthday,
+        isLoading = isLoading && birthday == null,
+        errorMessage = errorMessage,
+        onBack = onBack,
+        onEdit = { onEdit(birthdayId) },
+        onDelete = {
+            viewModel.deleteBirthday(birthdayId)
+            onBack()
+        }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun BirthdayDetailsContent(
+    birthday: Birthday?,
+    isLoading: Boolean,
+    errorMessage: String?,
+    onBack: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
+) {
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    onDelete()
+                    showDeleteDialog = false
+                }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = { TextButton(onClick = { showDeleteDialog = false }) { Text("Cancel") } },
+            title = { Text("Confirm Delete") },
+            text = { Text("Are you sure you want to delete this birthday? This action cannot be undone.") }
+        )
     }
 
     Scaffold(
@@ -106,7 +129,7 @@ fun BirthdayDetailsScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { onEdit(birthdayId) }) {
+                    IconButton(onClick = onEdit) {
                         Icon(Icons.Default.Edit, contentDescription = "Edit")
                     }
                     IconButton(onClick = { showDeleteDialog = true }) {
@@ -117,33 +140,32 @@ fun BirthdayDetailsScreen(
         }
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
-            if (isLoading && birthday == null) {
+            if (isLoading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             } else if (errorMessage != null && birthday == null) {
                 Text(
-                    text = errorMessage!!,
+                    text = errorMessage,
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.padding(16.dp).align(Alignment.Center)
                 )
             } else if (birthday != null) {
                 if (isLandscape) {
-                    Row(modifier = Modifier.padding(16.dp).fillMaxWidth()) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(text = birthday.name, style = MaterialTheme.typography.headlineLarge)
-                        }
+                    Row(modifier = Modifier.padding(16.dp).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                         AsyncImage(
                             model = birthday.pictureUrl ?: "https://placehold.jp/24/cccccc/ffffff/150x150.png?text=No%20Image",
                             contentDescription = "Birthday Image",
                             placeholder = painterResource(R.drawable.ic_launcher_foreground),
                             error = painterResource(R.drawable.ic_launcher_foreground),
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .height(200.dp)
+                                .weight(1f)
+                                .height(300.dp)
                                 .clip(MaterialTheme.shapes.medium),
                             contentScale = ContentScale.Crop
                         )
 
-                        Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+                        Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Text(text = birthday.name, style = MaterialTheme.typography.headlineLarge)
+                            HorizontalDivider()
                             DetailRow(label = "Date", value = "${birthday.birthDayOfMonth}/${birthday.birthMonth}-${birthday.birthYear}")
                             DetailRow(label = "Current Age", value = "${birthday.displayAge ?: "N/A"} years old.")
                             DetailRow(label = "Remarks", value = birthday.description ?: "No remarks provided.")
@@ -153,7 +175,8 @@ fun BirthdayDetailsScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
+                            .padding(16.dp)
+                            .verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         AsyncImage(
@@ -163,7 +186,7 @@ fun BirthdayDetailsScreen(
                             error = painterResource(R.drawable.ic_launcher_foreground),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(200.dp)
+                                .height(250.dp)
                                 .clip(MaterialTheme.shapes.medium),
                             contentScale = ContentScale.Crop
                         )
@@ -192,5 +215,31 @@ fun DetailRow(label: String, value: String) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(text = label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
         Text(text = value, style = MaterialTheme.typography.bodyLarge)
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun BirthdayDetailsScreenPreview() {
+    val sampleBirthday = Birthday(
+        id = 1,
+        userId = "test@test.com",
+        name = "Emil Skjold Larsen",
+        birthYear = 1996,
+        birthMonth = 10,
+        birthDayOfMonth = 2,
+        description = "Myself",
+        pictureUrl = "https://placehold.jp/24/cccccc/ffffff/150x150.png",
+        age = 26
+    )
+    MaterialTheme {
+        BirthdayDetailsContent(
+            birthday = sampleBirthday,
+            isLoading = false,
+            errorMessage = null,
+            onBack = {},
+            onEdit = {},
+            onDelete = {}
+        )
     }
 }
