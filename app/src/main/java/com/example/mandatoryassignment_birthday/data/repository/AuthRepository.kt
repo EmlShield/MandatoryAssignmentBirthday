@@ -1,5 +1,6 @@
 package com.example.mandatoryassignment_birthday.data.repository
 
+import android.util.Log
 import com.example.mandatoryassignment_birthday.data.model.User
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.tasks.await
@@ -22,7 +23,7 @@ class AuthRepository(private val firebaseAuth: FirebaseAuth) {
                 User(userId = it.uid, email = it.email)
             }
         } catch (e: Exception) {
-            // TODO: Handle login errors
+            Log.e("AuthRepository", "Login failed for email: $email", e)
             null
         }
     }
@@ -39,7 +40,7 @@ class AuthRepository(private val firebaseAuth: FirebaseAuth) {
                 User(userId = it.uid, email = it.email)
             }
         } catch (e: Exception) {
-            // TODO: Handle specific registration errors (email already in use)
+            Log.e("AuthRepository", "Sign up failed for email: $email", e)
             null
         }
     }
