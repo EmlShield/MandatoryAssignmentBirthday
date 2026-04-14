@@ -36,22 +36,18 @@ import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun LoginScreen(
-    onLoginSuccess: () -> Unit, // Callback for successful login
+    onLoginSuccess: () -> Unit,
     viewModel: AuthViewModel = koinViewModel()
 ) {
-    // Observe state changes from the ViewModel
     val user by viewModel.userState.collectAsState()
     val error by viewModel.error.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
-    // Local state for the text fields
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
-    // New State to toggle between Login and Sign-Up
     var isLoginMode by remember { mutableStateOf(true) }
 
-    // If the user state changes to "not null", trigger the success callback
     LaunchedEffect(user) {
         if (user != null) {
             onLoginSuccess()
@@ -68,7 +64,6 @@ fun LoginScreen(
         isLoginMode = isLoginMode,
         onModeChange = { isLoginMode = !isLoginMode },
         onActionClick = {
-            // Decide which ViewModel function to call
             if (isLoginMode) {
                 viewModel.login(email, password)
             } else {
@@ -98,7 +93,6 @@ fun LoginContent(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Dynamic Text based on mode
         Text(
             text = if (isLoginMode) "Welcome to Birthday App" else "Create Account",
             style = MaterialTheme.typography.headlineLarge
@@ -135,7 +129,6 @@ fun LoginContent(
             )
         )
 
-        // Show error message if login fails
         if (error != null) {
             Text(
                 text = error,
@@ -159,7 +152,6 @@ fun LoginContent(
             }
         }
 
-        // Button to switch modes
         TextButton(onClick = onModeChange) {
             Text(
                 if (isLoginMode) "Don't have an account? Sign Up"

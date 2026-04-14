@@ -81,8 +81,7 @@ class BirthdayViewModel(
                 val data = result.data
                 _birthdays.value = data
                 _errorMessage.value = null
-                
-                // Sync out-of-date ages to the API silently
+
                 syncAges(data)
             }
             is NetworkResult.Error -> {

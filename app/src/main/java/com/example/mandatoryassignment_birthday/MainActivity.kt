@@ -28,8 +28,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
-    
-    // Create the ViewModel here so it's shared across all screens in the NavHost
+
     val birthdayViewModel: BirthdayViewModel = koinViewModel()
 
     NavHost(navController = navController, startDestination = "login") {
@@ -46,7 +45,7 @@ fun AppNavigation() {
 
         composable("birthdayList") {
             BirthdayListScreen(
-                birthdayViewModel = birthdayViewModel, // Pass the shared VM
+                birthdayViewModel = birthdayViewModel,
                 onLogout = {
                     navController.navigate("login") {
                         popUpTo("birthdayList") { inclusive = true }
@@ -76,7 +75,7 @@ fun AppNavigation() {
 
             AddBirthdayScreen(
                 birthdayId = if (id == -1) null else id,
-                viewModel = birthdayViewModel, // Pass the shared VM
+                viewModel = birthdayViewModel,
                 onBack = { navController.popBackStack() }
             )
         }
@@ -89,7 +88,7 @@ fun AppNavigation() {
 
             BirthdayDetailsScreen(
                 birthdayId = id,
-                viewModel = birthdayViewModel, // Pass the shared VM
+                viewModel = birthdayViewModel,
                 onBack = { navController.popBackStack() },
                 onEdit = { birthdayId ->
                     navController.navigate("birthdayForm?birthdayId=$birthdayId")

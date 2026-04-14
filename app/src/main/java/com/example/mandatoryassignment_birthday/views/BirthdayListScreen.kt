@@ -70,18 +70,15 @@ import org.koin.androidx.compose.koinViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BirthdayListScreen(
-    // Ask Koin to provide the ViewModels
     birthdayViewModel: BirthdayViewModel = koinViewModel(),
     authViewModel: AuthViewModel = koinViewModel(),
-    onLogout: () -> Unit, // Callback for navigation
+    onLogout: () -> Unit,
     onEditBirthday: (Int) -> Unit,
     onSeeDetails: (Int) -> Unit
 ) {
-    // Collect the list of birthdays from the ViewModel as state
     val birthdayList by birthdayViewModel.birthdays.collectAsState()
     val user by authViewModel.userState.collectAsState()
 
-    // Observe loading & error state
     val isLoading by birthdayViewModel.isLoading.collectAsState()
     val errorMessage by birthdayViewModel.errorMessage.collectAsState()
 
@@ -91,7 +88,6 @@ fun BirthdayListScreen(
     var showDeleteDialog by remember { mutableStateOf(false) }
     var idToDelete by remember { mutableIntStateOf(-1) }
 
-    // Fetch the birthdays when the screen is first displayed
     LaunchedEffect(user) {
         val email = user?.email
         if (email != null) {
@@ -132,7 +128,6 @@ fun BirthdayListScreen(
             TopAppBar(
                 title = { Text("Upcoming Birthdays") },
                 actions = {
-                    // Logout button with Icon and Text
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier
@@ -153,7 +148,7 @@ fun BirthdayListScreen(
         },
         floatingActionButton = {
             FloatingActionButton(onClick = {
-                onEditBirthday(-1) // -1 indicates a new birthday
+                onEditBirthday(-1)
             }) {
                 Icon(Icons.Default.Add, contentDescription = "Add")
             }
@@ -166,7 +161,6 @@ fun BirthdayListScreen(
                 currentSortOrder = sortOrder,
                 onSortChange = { birthdayViewModel.setSortOrder(it) }
             )
-            // Handle the different UI states
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
@@ -185,7 +179,6 @@ fun BirthdayListScreen(
                         }
                     }
                 } else {
-                    // Only show the content if not loading and no error
                     BirthdayListContent(
                         birthdays = birthdayList,
                         onDeleteClick = { id ->

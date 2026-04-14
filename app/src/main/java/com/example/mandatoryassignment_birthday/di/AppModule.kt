@@ -17,9 +17,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 val appModule = module {
-    // Provide Retrofit
     single {
-        // Client with timeouts
         val client = OkHttpClient.Builder()
             .connectTimeout(15, TimeUnit.SECONDS)
             .readTimeout(15, TimeUnit.SECONDS)
@@ -28,32 +26,24 @@ val appModule = module {
 
         Retrofit.Builder()
             .baseUrl(BuildConfig.BASE_URL)
-            .client(client) // Use the client
+            .client(client)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
     }
 
-    // Provide API Service
     single { get<Retrofit>().create(BirthdayApiService::class.java) }
 
-    // Provide the Repository
     single { BirthdayRepository(get()) }
 
-    // Provide the ViewModel
     viewModel { BirthdayViewModel(get(), get()) }
 
-    // Provide FirebaseAuth instance
     single { FirebaseAuth.getInstance() }
 
-    // Provide AuthRepository
     single { AuthRepository(get()) }
 
-    // Provide AuthViewModel
     viewModel { AuthViewModel(get()) }
 
-    // Provide FirebaseStorage instance
     single { FirebaseStorage.getInstance() }
 
-    // Provide ImageRepository
     single { ImageRepository(get()) }
 }

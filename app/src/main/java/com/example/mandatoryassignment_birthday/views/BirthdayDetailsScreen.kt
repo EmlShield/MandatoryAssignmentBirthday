@@ -61,12 +61,10 @@ fun BirthdayDetailsScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
 
-    // Find the birthday in the list so it updates when the list updates
     val birthday = remember(birthdays, birthdayId) {
         birthdays.find { it.id == birthdayId }
     }
 
-    // Ensure data is loaded
     LaunchedEffect(user, birthdays) {
         val email = user?.email
         if (email != null && birthdays.isEmpty()) {
