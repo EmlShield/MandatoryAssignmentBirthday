@@ -3,12 +3,10 @@ package com.example.mandatoryassignment_birthday.views
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -47,6 +45,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.mandatoryassignment_birthday.viewmodel.AuthViewModel
@@ -65,36 +64,16 @@ fun AddBirthdayScreen(
     viewModel: BirthdayViewModel = koinViewModel(),
     authViewModel: AuthViewModel = koinViewModel()
 ) {
-    var name by remember { mutableStateOf("") }
-    var remarks by remember { mutableStateOf("") }
-    var imageUri by remember { mutableStateOf<Uri?>(null) }
-    var existingImageUrl by remember { mutableStateOf<String?>(null) }
-
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        imageUri = uri
-    }
-
     val user by authViewModel.userState.collectAsState()
-    
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
     val birthdays by viewModel.birthdays.collectAsState()
 
-    // DatePicker state
+    var name by remember { mutableStateOf("") }
+    var remarks by remember { mutableStateOf("") }
+    var imageUri by remember { mutableStateOf<Uri?>(null) }
+    var existingImageUrl by remember { mutableStateOf<String?>(null) }
     val datePickerState = rememberDatePickerState()
-    var showDatePicker by remember { mutableStateOf(false) }
-
-    // Helper to format the display date using LocalDate
-    val selectedDateText = datePickerState.selectedDateMillis?.let {
-        val date = Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate()
-        date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
-    } ?: "Select Date"
-
-    var wasAttempted by remember { mutableStateOf(false) }
-    val isNameValid = name.isNotBlank()
-    val isDateValid = datePickerState.selectedDateMillis != null
 
     // Fetch data if we are editing and the list is empty
     LaunchedEffect(user, birthdays) {
@@ -114,7 +93,6 @@ fun AddBirthdayScreen(
                 val localDate = LocalDate.of(existing.birthYear, existing.birthMonth, existing.birthDayOfMonth)
                 val millis = localDate.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
                 datePickerState.selectedDateMillis = millis
-                // Ensure the DatePicker opens at the month of the selected birthday
                 datePickerState.displayedMonthMillis = millis
             }
         }
@@ -128,6 +106,76 @@ fun AddBirthdayScreen(
             }
         }
     }
+
+    AddBirthdayContent(
+        birthdayId = birthdayId,
+        onBack = onBack,
+        isLoading = isLoading,
+        errorMessage = errorMessage,
+        onSave = { name, remarks, uri, millis ->
+            val currentUserEmail = user?.email
+            if (millis != null && currentUserEmail != null) {
+                val localDate = Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
+                val year = localDate.year
+                val month = localDate.monthValue
+                val day = localDate.dayOfMonth
+
+                if (birthdayId == null || birthdayId == -1) {
+                    viewModel.addBirthday(currentUserEmail, name, year, month, day, remarks, uri)
+                } else {
+                    viewModel.updateBirthday(birthdayId, name, year, month, day, remarks, uri)
+                }
+            }
+        },
+        initialName = name,
+        initialRemarks = remarks,
+        initialExistingImageUrl = existingImageUrl,
+        initialSelectedDateMillis = datePickerState.selectedDateMillis
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AddBirthdayContent(
+    birthdayId: Int? = null,
+    onBack: () -> Unit,
+    isLoading: Boolean,
+    errorMessage: String?,
+    onSave: (String, String, Uri?, Long?) -> Unit,
+    initialName: String = "",
+    initialRemarks: String = "",
+    initialExistingImageUrl: String? = null,
+    initialSelectedDateMillis: Long? = null
+) {
+    var name by remember(initialName) { mutableStateOf(initialName) }
+    var remarks by remember(initialRemarks) { mutableStateOf(initialRemarks) }
+    var imageUri by remember { mutableStateOf<Uri?>(null) }
+    var existingImageUrl by remember(initialExistingImageUrl) { mutableStateOf(initialExistingImageUrl) }
+
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        imageUri = uri
+    }
+
+    val datePickerState = rememberDatePickerState(initialSelectedDateMillis = initialSelectedDateMillis)
+    var showDatePicker by remember { mutableStateOf(false) }
+
+    LaunchedEffect(initialSelectedDateMillis) {
+        initialSelectedDateMillis?.let {
+            datePickerState.selectedDateMillis = it
+            datePickerState.displayedMonthMillis = it
+        }
+    }
+
+    val selectedDateText = datePickerState.selectedDateMillis?.let {
+        val date = Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate()
+        date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+    } ?: "Select Date"
+
+    var wasAttempted by remember { mutableStateOf(false) }
+    val isNameValid = name.isNotBlank()
+    val isDateValid = datePickerState.selectedDateMillis != null
 
     Scaffold(
         topBar = {
@@ -151,14 +199,13 @@ fun AddBirthdayScreen(
         ) {
             if (errorMessage != null) {
                 Text(
-                    text = errorMessage!!,
+                    text = errorMessage,
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
             }
 
-            // Image Picker Section
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -254,21 +301,7 @@ fun AddBirthdayScreen(
                 onClick = {
                     wasAttempted = true
                     if (isNameValid && isDateValid) {
-                        val millis = datePickerState.selectedDateMillis
-                        val currentUserEmail = user?.email
-
-                        if (millis != null && currentUserEmail != null) {
-                            val localDate = Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
-                            val year = localDate.year
-                            val month = localDate.monthValue
-                            val day = localDate.dayOfMonth
-
-                            if (birthdayId == null || birthdayId == -1) {
-                                viewModel.addBirthday(currentUserEmail, name, year, month, day, remarks, imageUri)
-                            } else {
-                                viewModel.updateBirthday(birthdayId, name, year, month, day, remarks, imageUri)
-                            }
-                        }
+                        onSave(name, remarks, imageUri, datePickerState.selectedDateMillis)
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
@@ -303,5 +336,18 @@ fun AddBirthdayScreen(
                 DatePicker(state = datePickerState)
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun AddBirthdayScreenPreview() {
+    MaterialTheme {
+        AddBirthdayContent(
+            onBack = {},
+            isLoading = false,
+            errorMessage = null,
+            onSave = { _, _, _, _ -> }
+        )
     }
 }

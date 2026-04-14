@@ -57,6 +57,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.mandatoryassignment_birthday.R
@@ -343,5 +344,21 @@ fun SortChip(label: String, isSelected: Boolean, onClick: () -> Unit) {
         leadingIcon = if (isSelected) {
             { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
         } else null
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun BirthdayListScreenPreview() {
+    val sampleBirthdays = listOf(
+        Birthday(1, "test@test.com", "John Johnson", 1990, 5, 15, "Best friend", null, 35),
+        Birthday(2, "test@test.com", "Smithy Black", 1985, 10, 20, "Sister", null, 40)
+    )
+
+    BirthdayListContent(
+        birthdays = sampleBirthdays,
+        onDeleteClick = {},
+        onEditClick = {},
+        onCardClick = {}
     )
 }
