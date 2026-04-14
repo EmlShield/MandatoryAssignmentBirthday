@@ -12,7 +12,6 @@ interface BirthdayApiService {
     @GET("persons")
     suspend fun getBirthdays(): List<Birthday>
 
-    // @Body tells Retrofit to convert the birthday object to JSON
     @POST("persons")
     suspend fun addBirthday(@Body birthday: Birthday): Birthday
 

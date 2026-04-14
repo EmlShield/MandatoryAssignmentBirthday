@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
-    // Possible states for the authentication process
     private val _userState = MutableStateFlow<User?>(null)
     val userState: StateFlow<User?> = _userState.asStateFlow()
 
@@ -22,7 +21,6 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
     init {
-        // Check if a user is already logged in
         _userState.value = repository.getCurrentUser()
     }
 
@@ -63,7 +61,6 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
                     _error.value = "Could not create account."
                 }
             } catch (e: Exception) {
-                // Shows real errors like "Email already in use"
                 Log.e("AuthViewModel", "Sign up process failed", e)
                 _error.value = e.localizedMessage ?: "Sign Up Failed"
             } finally {
