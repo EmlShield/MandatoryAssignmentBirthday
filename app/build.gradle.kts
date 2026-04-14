@@ -82,4 +82,7 @@ dependencies {
     implementation(libs.google.firebase.storage)
     implementation(libs.kotlinx.coroutines.play.services)
     implementation(libs.androidx.compose.material.icons.extended)
+
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    debugImplementation(libs.androidx.ui.test.manifest)
 }
